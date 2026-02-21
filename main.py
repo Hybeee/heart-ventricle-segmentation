@@ -3,11 +3,14 @@ import matplotlib.pyplot as plt
 
 import os
 import yaml
+import shutil
 
 import utils
 import preprocessor
 import thresholds
 import postprocessor
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def save_result_plots(output_dir, threshold):
     preproc_data_dir = os.path.join(output_dir, "preprocessing", "np")
@@ -82,7 +85,7 @@ def save_result_plots(output_dir, threshold):
     plt.close()
 
 def _process_one_patient(patient_id, patient_data, config):
-    output_dir = os.path.join("output", patient_id)
+    output_dir = os.path.join(ROOT_DIR, "output", patient_id)
     os.makedirs(output_dir, exist_ok=True)
 
     ct_path = patient_data["ct_path"]
@@ -110,6 +113,7 @@ def _process_one_patient(patient_id, patient_data, config):
     nnunet_mask = utils.scan_to_np_array(nnunet_mask_path)
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
     atrium = (nnunet_mask == 1).astype(nnunet_mask.dtype)
+
     lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
 
 
@@ -148,8 +152,16 @@ def _process_one_patient(patient_id, patient_data, config):
         threshold=best_threshold
     )
 
+    if config["cleanup"]:
+        for item in os.listdir(output_dir):
+            path = os.path.join(output_dir, item)
+            if os.path.isdir(path):
+                shutil.rmtree(path=path)
+
+
 def _process_multiple_patients(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
+        print(f"Processing {patient_id}")
         patient_data = patients_data[patient_id]
         _process_one_patient(
             patient_id=patient_id,
@@ -158,10 +170,10 @@ def _process_multiple_patients(patients_to_process, patients_data, config):
         )
 
 def main():
-    with open("config.yaml", 'r') as f:
+    with open(os.path.join(ROOT_DIR, "config.yaml"), 'r') as f:
         config = yaml.safe_load(f)
 
-    with open("patients_data.json", 'r') as f:
+    with open(os.path.join(ROOT_DIR, "patients_data.json"), 'r') as f:
         patients_data = yaml.safe_load(f)
 
     patient_id = "patient_0001"
@@ -173,7 +185,7 @@ def main():
     )
 
     # patients_to_process = []
-    # with open("patients_to_process.txt", 'r') as file:
+    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
     #     for line in file:
     #         line = line.strip()
     #         patients_to_process.append(line)
