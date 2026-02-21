@@ -210,3 +210,4 @@ __marimo__/
 output/
 patients_data.json
 config.yaml
+patients_to_process.txt
