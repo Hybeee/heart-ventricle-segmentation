@@ -56,7 +56,7 @@ def _preprocess_ct(config,
         sigma = np.round(sigma[0], 2)
     else:
         print("Different sigma. Skipping.")
-        return None
+        return None, None
 
     _, polar_dir_grad = utils.get_directional_grad(
         ct=ct,
