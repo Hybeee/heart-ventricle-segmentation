@@ -156,7 +156,7 @@ def preprocess(config: dict,
     )
 
     if polar_dir_grad is None:
-        return False
+        return None
     
     polar_atrium = _preprocess_mask(
         config=config,

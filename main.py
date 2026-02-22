@@ -127,6 +127,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
             doc_mask = (doc_mask == 2).astype(doc_mask.dtype)
     except Exception as e:
         print(f"Exception occured during doc mask loading. Setting mask to None.")
+        print(f"Exception: {e}")
         doc_mask = None
     
     nnunet_mask_path = patient_data["nnunet_mask_path"]
