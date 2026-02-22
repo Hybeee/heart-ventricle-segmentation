@@ -209,7 +209,7 @@ def main():
     patient_id = "patient_0001"
     patient_data = patients_data[patient_id]
     _process_one_patient(
-        patient_id="patient_0001",
+        patient_id=patient_id,
         patient_data=patient_data,
         config=config
     )

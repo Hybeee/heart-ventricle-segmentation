@@ -174,6 +174,8 @@ def preprocess(config: dict,
         return_boundary=False
     )
     lung_intervals =  _get_mask_indices(polar_mask=polar_lung)
+    if (not atrium_intervals[0] == -1) and (not atrium_intervals[1] == -1):
+        lung_intervals[0][1] = atrium_intervals[0]
 
     polar_ventricle, polar_ventricle_boundary = _preprocess_mask(
         config=config,
