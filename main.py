@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import yaml
 import shutil
+import json
 
 import utils
 import preprocessor
@@ -12,7 +13,7 @@ import postprocessor
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def save_result_plots(output_dir, threshold):
+def _save_result_plots(output_dir, threshold):
     preproc_data_dir = os.path.join(output_dir, "preprocessing", "np")
     ct = np.load(os.path.join(preproc_data_dir, "ct.npy"))
     polar_dir_grad = np.load(os.path.join(preproc_data_dir, "polar_dir_grad.npy"))
@@ -84,6 +85,25 @@ def save_result_plots(output_dir, threshold):
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()
 
+def _save_result_json(output_dir):
+    with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
+        preproc_json = json.load(f)
+
+    with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
+        thresholds_json = json.load(f)
+    
+    with open(os.path.join(output_dir, "postprocessing", "nms_result.json"), 'r') as f:
+        postproc_json = json.load(f)
+    
+    result_json = {
+        "preprocessing": preproc_json,
+        "thresholds": thresholds_json,
+        "postprocessing": postproc_json
+    }
+
+    with open(os.path.join(output_dir, "result.json"), 'w') as f:
+        json.dump(result_json, f, indent=3)
+
 def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     output_dir = os.path.join(ROOT_DIR, "output", patient_id)
     os.makedirs(output_dir, exist_ok=True)
@@ -116,9 +136,10 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
 
     lung_mask_path = patient_data.get("lung_mask_path", None)
     if (lung_mask_path is None) or (not os.path.exists(lung_mask_path)):
-        lung = utils.create_and_save_lung_mask(patient_data=patient_data)
-    else:
-        lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
+        patient_data = utils.create_and_save_lung_mask(patient_data=patient_data,
+                                        output_dir=output_dir)
+    
+    lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
 
 
     polar_converter = preprocessor.preprocess(
@@ -151,9 +172,13 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
 
     print("Postprocessing finished successfully!")
 
-    save_result_plots(
+    _save_result_plots(
         output_dir=output_dir,
         threshold=best_threshold
+    )
+
+    _save_result_json(
+        output_dir=output_dir
     )
 
     if config["cleanup"]:

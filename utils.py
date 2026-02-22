@@ -42,8 +42,12 @@ def create_and_save_lung_mask(patient_data, output_dir):
     output_path = os.path.join(output_dir, "lung_mask.nii.gz")
     result_nifti = nib.Nifti1Image(seg_data, output_img.affine)
     nib.save(result_nifti, output_path)
-    
+
+    patient_data["lung_mask_path"] = output_path
+
     print(f"Lung segmentation saved to: {output_path}")
+    
+    return patient_data
 
 def calculate_slice_center(slice):
     ys, xs = np.nonzero(slice)

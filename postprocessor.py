@@ -89,12 +89,13 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str, polar_
         total = np.abs(polar_grad[r_indices, theta_indices]).sum()
 
         print(f"\t{threshold}: {total}")
+        nms_result[threshold]["total_depth"] = float(total)
 
         if total > best_score:
             best_score = total
             best_threshold = threshold
 
-    return best_threshold
+    return best_threshold, nms_result
 
 
 def _get_input(input_dir):
@@ -126,11 +127,14 @@ def postprocess(config, output_dir):
         print(f"nms_type: {config['nms_type']} is invalid.")
         return
     
-    best_threshold = dummy_decider(
+    best_threshold, nms_result = dummy_decider(
         nms_result=nms_result,
         data_dict=data_dict,
         thresholds_dir=thresholds_dir,
         polar_grad=polar_grad
     )
+
+    with open(os.path.join(output_dir, "nms_result.json"), 'w') as f:
+        json.dump(nms_result, f, indent=2)
 
     return best_threshold
