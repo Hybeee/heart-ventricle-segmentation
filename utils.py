@@ -4,6 +4,10 @@ from scipy.ndimage import convolve, gaussian_filter
 import matplotlib.pyplot as plt
 from skimage import measure
 import SimpleITK as sitk
+import nibabel as nib
+from totalsegmentator.python_api import totalsegmentator
+
+import os
 
 def scan_to_np_array(scan_path, return_sitk=False, return_spacing=False):
     """
@@ -24,6 +28,22 @@ def scan_to_np_array(scan_path, return_sitk=False, return_spacing=False):
         return spacing, scan
     else:
         return scan
+    
+def create_and_save_lung_mask(patient_data, output_dir):
+    input_img = nib.load(patient_data["ct_path"])
+    output_img = totalsegmentator(input=input_img, task="total", verbose=False)
+
+    seg_data = output_img.get_fdata()
+
+    class_indices = [10, 11] # lung mask indices
+    mask = np.isin(seg_data, class_indices)
+    seg_data = mask.astype(np.uint8)
+
+    output_path = os.path.join(output_dir, "lung_mask.nii.gz")
+    result_nifti = nib.Nifti1Image(seg_data, output_img.affine)
+    nib.save(result_nifti, output_path)
+    
+    print(f"Lung segmentation saved to: {output_path}")
 
 def calculate_slice_center(slice):
     ys, xs = np.nonzero(slice)

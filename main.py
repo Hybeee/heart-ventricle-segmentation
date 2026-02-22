@@ -84,7 +84,7 @@ def save_result_plots(output_dir, threshold):
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()
 
-def _process_one_patient(patient_id, patient_data, config):
+def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     output_dir = os.path.join(ROOT_DIR, "output", patient_id)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -114,7 +114,11 @@ def _process_one_patient(patient_id, patient_data, config):
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
     atrium = (nnunet_mask == 1).astype(nnunet_mask.dtype)
 
-    lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
+    lung_mask_path = patient_data.get("lung_mask_path", None)
+    if (lung_mask_path is None) or (not os.path.exists(lung_mask_path)):
+        lung = utils.create_and_save_lung_mask(patient_data=patient_data)
+    else:
+        lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
 
 
     polar_converter = preprocessor.preprocess(
