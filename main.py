@@ -85,6 +85,21 @@ def _save_result_plots(output_dir, threshold):
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()
 
+def _append_area_data(output_dir, thresholds_json, ventricle_area):
+    new_dict = {}
+    
+    for threshold in thresholds_json.keys():
+        threshold_dict = thresholds_json[threshold]
+        threshold_mask = np.load(os.path.join(output_dir, "thresholds", "np", threshold, "mask.npy"))
+        threshold_area = np.sum(threshold_mask == 1)
+        threshold_dict["area"] = float(threshold_area)
+        threshold_dict["area_ratio"] = float(threshold_area / ventricle_area)
+
+        new_dict[threshold] = threshold_dict
+    
+    return new_dict
+
+
 def _save_result_json(output_dir, best_threshold):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
@@ -92,13 +107,19 @@ def _save_result_json(output_dir, best_threshold):
     with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
         thresholds_json = json.load(f)
     
+    ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
+    ventricle_area = np.sum(ventricle == 1)
+    thresholds_json = _append_area_data(output_dir=output_dir,
+                      thresholds_json=thresholds_json,
+                      ventricle_area=ventricle_area)
+
     with open(os.path.join(output_dir, "postprocessing", "nms_result.json"), 'r') as f:
         postproc_json = json.load(f)
     
-    ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
+    
     best_mask = np.load(os.path.join(output_dir, "thresholds", "np", str(best_threshold), "mask.npy"))
 
-    ventricle_area = np.sum(ventricle == 1)
+    
     best_mask_area = np.sum(best_mask == 1)
 
     area_data = {
