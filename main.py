@@ -85,7 +85,7 @@ def _save_result_plots(output_dir, threshold):
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()
 
-def _save_result_json(output_dir):
+def _save_result_json(output_dir, best_threshold):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
 
@@ -95,7 +95,25 @@ def _save_result_json(output_dir):
     with open(os.path.join(output_dir, "postprocessing", "nms_result.json"), 'r') as f:
         postproc_json = json.load(f)
     
+    ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
+    best_mask = np.load(os.path.join(output_dir, "thresholds", "np", str(best_threshold), "mask.npy"))
+
+    ventricle_area = np.sum(ventricle == 1)
+    best_mask_area = np.sum(best_mask == 1)
+
+    area_data = {
+        "ventricle": float(ventricle_area),
+        "best_mask": float(best_mask_area),
+        "ratio": float(best_mask_area / ventricle_area)
+    }
+
+    output_data = {
+        "best_threshold": float(best_threshold),
+        "area_data": area_data
+    }
+
     result_json = {
+        "output_data": output_data,
         "preprocessing": preproc_json,
         "thresholds": thresholds_json,
         "postprocessing": postproc_json
@@ -179,7 +197,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     )
 
     _save_result_json(
-        output_dir=output_dir
+        output_dir=output_dir,
+        best_threshold=best_threshold
     )
 
     if config["cleanup"]:
