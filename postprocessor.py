@@ -67,25 +67,85 @@ def get_nms_result(config, score_data, nms_type, output_dir):
     
     return nms_result
 
+class ValleyData:
+    def __init__(self, polar_grad: np.ndarray):
+        self.fo_deriv = polar_grad
+        self.so_deriv = np.gradient(self.fo_deriv, axis=0)
+
+        self.zero_crossings = np.diff(np.signbit(self.so_deriv), axis=0)
+
+        self.valley_slope = self.so_deriv[1:, :] - self.so_deriv[:-1, :]
+        self.valley_mask = self.zero_crossings & (self.valley_slope > 0)
+        self.peak_slope = -self.so_deriv[1:, :] + self.so_deriv[:-1, :]
+        self.peak_mask = self.zero_crossings & (self.peak_slope > 0)
+
+        self.valley_positions = [np.where(self.valley_mask[:, c])[0] for c in range(polar_grad.shape[1])]
+        self.peak_positions = [np.where(self.peak_mask[:, c])[0] for c in range(polar_grad.shape[1])]
+
+    def get_valley_data(self, boundary_points: np.ndarray):
+        r_idx, theta_idx = boundary_points[:, 0], boundary_points[:, 1]
+        
+        assigned_valleys = np.full(len(r_idx), -1, dtype=int)
+        assigned_valley_positions = np.full(len(r_idx), -1, dtype=int)
+
+        for i, (r, t) in enumerate(zip(r_idx, theta_idx)):
+            valley_position = self.valley_positions[t]
+            peak_position = self.peak_positions[t]
+
+            if len(valley_position) == 0:
+                assigned_valleys[i] = -1
+                assigned_valley_positions[i] = -1
+                continue
+
+            valley_idx = np.searchsorted(valley_position, r, side='right') - 1
+            if valley_idx < 0:
+                assigned_valleys[i] = -1
+                assigned_valley_positions[i] = -1
+                continue
+            
+            next_valley = valley_position[valley_idx + 1] if (valley_idx + 1) < len(valley_position) else self.fo_deriv.shape[0]
+            peaks_between = peak_position[(peak_position > valley_position[valley_idx]) & (peak_position < next_valley)]
+
+            if len(peaks_between) > 0 and r > peaks_between[0]:
+                valley_idx += 1
+                valley_idx = min(valley_idx, len(valley_position)-1)
+            
+            assigned_valleys[i] = valley_idx
+            assigned_valley_positions[i] = self.valley_positions[t][valley_idx]
+        
+        return (assigned_valleys, assigned_valley_positions)
+
+PRINT = True
+
 def _get_valley_indices(polar_grad: np.ndarray, boundary_points):
-    fo_deriv = polar_grad
-    so_deriv = np.gradient(fo_deriv, axis=0)
+    global PRINT
+    valley_data = ValleyData(polar_grad=polar_grad)
+    result = valley_data.get_valley_data(boundary_points=boundary_points)
 
-    zero_crossings = np.diff(np.signbit(so_deriv), axis=0)
+    (assigned_valleys, assigned_valley_positions) = result
 
-    slope = so_deriv[1:, :] - so_deriv[:-1, :]
-    valley_mask = zero_crossings & (slope > 0)
-    valley_index_map = np.cumsum(valley_mask, axis=0)
-    valley_index_map = np.pad(valley_index_map, ((1,0), (0,0)), mode='constant')
+    # if PRINT:
+    #     PRINT = False
+    #     fo_grad = valley_data.fo_deriv[:, 5]
+    #     boundary_point = boundary_points[5]
+        
+    #     valley_r = assigned_valley_positions[5]
+    #     valley_v = fo_grad[valley_r]
 
-    r_idx, theta_idx = boundary_points[:, 0], boundary_points[:, 1]
-    assigned_valleys = valley_index_map[r_idx, theta_idx]
+    #     r = boundary_point[0]
+    #     v = fo_grad[r]
 
-    first_valley = np.argmax(valley_mask, axis=0)
-    last_valley = valley_mask.shape[0] - 1 - np.argmax(valley_mask[::-1, :], axis=0)
-    valid = (r_idx >= first_valley[theta_idx]) & (r_idx <= last_valley[theta_idx])
 
-    assigned_valleys[~valid] = -1
+    #     plt.plot(fo_grad)
+    #     plt.scatter(r, v, c='red', s=5, marker='o')
+    #     valley_positions = valley_data.valley_positions[5]
+    #     for pos in valley_positions:
+    #         r = pos
+    #         v = fo_grad[r]
+    #         plt.scatter(r, v, c='orange', s=30, marker='o')
+    #     plt.scatter(valley_r, valley_v, c='purple', s=20, marker='o')
+    #     plt.title(f"Valley index: {assigned_valleys[5]}")
+    #     plt.show()
 
     return assigned_valleys
 
@@ -112,21 +172,17 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
         total = np.abs(polar_grad[r_indices, theta_indices]).sum()
 
-        assigned_valleys_t = _get_valley_indices(
-            polar_grad=polar_grad,
-            boundary_points=polar_threshold_b)
-        assigned_valleys_v = _get_valley_indices(
-            polar_grad=polar_grad,
-            boundary_points=polar_ventricle_b
-        )
+        # assigned_valleys_t = _get_valley_indices(
+        #     polar_grad=polar_grad,
+        #     boundary_points=polar_threshold_b)
+        # assigned_valleys_v = _get_valley_indices(
+        #     polar_grad=polar_grad,
+        #     boundary_points=polar_ventricle_b
+        # )
 
-        if best_threshold is None:
-            best_score = total
-            best_threshold = threshold
-
-        if np.any(assigned_valleys_t == assigned_valleys_v):
-            print(f"Skipping {threshold}.")
-            continue
+        # if np.any(assigned_valleys_t == assigned_valleys_v):
+        #     print(f"Skipping {threshold}.")
+        #     continue
 
         print(f"\t{threshold}: {total}")
         nms_result[threshold]["total_depth"] = float(total)
@@ -137,8 +193,11 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
     return best_threshold, nms_result
 
-class InputObject:
+def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
+                     polar_grad: np.ndarray, polar_ventricle_b: np.ndarray):
+    pass
 
+class InputObject:
     def __init__(self, input_dir):
         with open(os.path.join(input_dir, "thresholds", "score_data.json"), 'r') as f:
             self.score_data = json.load(f)
