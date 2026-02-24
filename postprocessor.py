@@ -115,40 +115,6 @@ class ValleyData:
         
         return (assigned_valleys, assigned_valley_positions)
 
-PRINT = True
-
-def _get_valley_indices(polar_grad: np.ndarray, boundary_points):
-    global PRINT
-    valley_data = ValleyData(polar_grad=polar_grad)
-    result = valley_data.get_valley_data(boundary_points=boundary_points)
-
-    (assigned_valleys, assigned_valley_positions) = result
-
-    # if PRINT:
-    #     PRINT = False
-    #     fo_grad = valley_data.fo_deriv[:, 5]
-    #     boundary_point = boundary_points[5]
-        
-    #     valley_r = assigned_valley_positions[5]
-    #     valley_v = fo_grad[valley_r]
-
-    #     r = boundary_point[0]
-    #     v = fo_grad[r]
-
-
-    #     plt.plot(fo_grad)
-    #     plt.scatter(r, v, c='red', s=5, marker='o')
-    #     valley_positions = valley_data.valley_positions[5]
-    #     for pos in valley_positions:
-    #         r = pos
-    #         v = fo_grad[r]
-    #         plt.scatter(r, v, c='orange', s=30, marker='o')
-    #     plt.scatter(valley_r, valley_v, c='purple', s=20, marker='o')
-    #     plt.title(f"Valley index: {assigned_valleys[5]}")
-    #     plt.show()
-
-    return assigned_valleys
-
 def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
                   polar_grad: np.ndarray, polar_ventricle_b: np.ndarray):
     best_threshold = None
@@ -195,7 +161,48 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
 def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
                      polar_grad: np.ndarray, polar_ventricle_b: np.ndarray):
-    pass
+    best_threshold = None
+    best_score = np.inf
+
+    lung_data = data_dict["lung_data"]
+    starts = lung_data["starts"]
+    ends = lung_data["ends"]
+
+    valley_data = ValleyData(polar_grad=polar_grad)
+
+    for threshold in nms_result.keys():
+        threshold_dir = os.path.join(thresholds_dir, threshold)
+        polar_threshold_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
+        r_indices = polar_threshold_b[:, 0].astype(int)
+        theta_indices = polar_threshold_b[:, 1].astype(int)
+
+        t_valley_data = valley_data.get_valley_data(boundary_points=polar_threshold_b)
+        (t_assigned_valleys, t_assigned_valley_positions) = t_valley_data
+
+        v_valley_data = valley_data.get_valley_data(boundary_points=polar_ventricle_b)
+        (v_assigned_valleys, _) = v_valley_data
+        
+        valid_mask = (
+            ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
+        ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
+
+        r_valid = r_indices[valid_mask]
+        theta_valid = theta_indices[valid_mask]
+        valley_r_valid = t_assigned_valley_positions[valid_mask]
+
+        weights = np.array([abs(polar_grad[int(rv), theta])
+                            for rv, theta in zip(valley_r_valid, theta_valid)])
+        distances = (r_valid - valley_r_valid)**2
+
+        score = np.sum(weights * distances) / np.sum(weights)
+        nms_result[threshold]["distance_decider_score"] = float(score)
+        
+        if score < best_score:
+            best_score = score
+            best_threshold = threshold
+
+    return best_threshold, nms_result
+
 
 class InputObject:
     def __init__(self, input_dir):
@@ -230,7 +237,7 @@ def postprocess(config, output_dir):
         print(f"nms_type: {config['nms_type']} is invalid.")
         return
     
-    best_threshold, nms_result = dummy_decider(
+    best_threshold, nms_result = distance_decider(
         nms_result=nms_result,
         data_dict=input_object.data_dict,
         thresholds_dir=input_object.thresholds_dir,
