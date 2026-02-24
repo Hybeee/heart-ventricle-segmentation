@@ -147,63 +147,63 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     output_dir = os.path.join(ROOT_DIR, "output", patient_id)
     os.makedirs(output_dir, exist_ok=True)
 
-    # ct_path = patient_data["ct_path"]
-    # spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
+    ct_path = patient_data["ct_path"]
+    spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
     
-    # try:
-    #     doc_mask_path = patient_data["doc_mask_path"]
-    #     doc_mask = utils.scan_to_np_array(doc_mask_path)
-    #     if patient_id == "patient_0001":
-    #         doc_mask = doc_mask[:, :, :, 3]
-    #     elif patient_id == "patient_0010":
-    #         doc_mask = doc_mask[:, :, :, 1]
-    #         doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
-    #     elif patient_id == "patient_0053":
-    #         doc_mask = doc_mask[:, :, :, 2]
-    #         doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
-    #     else:
-    #         doc_mask = doc_mask[:, :, :, 1]
-    #         doc_mask = (doc_mask == 2).astype(doc_mask.dtype)
-    # except Exception as e:
-    #     print(f"Exception occured during doc mask loading. Setting mask to None.")
-    #     print(f"Exception: {e}")
-    #     doc_mask = None
+    try:
+        doc_mask_path = patient_data["doc_mask_path"]
+        doc_mask = utils.scan_to_np_array(doc_mask_path)
+        if patient_id == "patient_0001":
+            doc_mask = doc_mask[:, :, :, 3]
+        elif patient_id == "patient_0010":
+            doc_mask = doc_mask[:, :, :, 1]
+            doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
+        elif patient_id == "patient_0053":
+            doc_mask = doc_mask[:, :, :, 2]
+            doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
+        else:
+            doc_mask = doc_mask[:, :, :, 1]
+            doc_mask = (doc_mask == 2).astype(doc_mask.dtype)
+    except Exception as e:
+        print(f"Exception occured during doc mask loading. Setting mask to None.")
+        print(f"Exception: {e}")
+        doc_mask = None
     
-    # nnunet_mask_path = patient_data["nnunet_mask_path"]
-    # nnunet_mask = utils.scan_to_np_array(nnunet_mask_path)
-    # ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
-    # atrium = (nnunet_mask == 1).astype(nnunet_mask.dtype)
+    nnunet_mask_path = patient_data["nnunet_mask_path"]
+    nnunet_mask = utils.scan_to_np_array(nnunet_mask_path)
+    ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
+    atrium = (nnunet_mask == 1).astype(nnunet_mask.dtype)
 
-    # lung_mask_path = patient_data.get("lung_mask_path", None)
-    # if (lung_mask_path is None) or (not os.path.exists(lung_mask_path)):
-    #     patient_data = utils.create_and_save_lung_mask(patient_data=patient_data,
-    #                                     output_dir=output_dir)
+    lung_mask_path = patient_data.get("lung_mask_path", None)
+    if (lung_mask_path is None) or (not os.path.exists(lung_mask_path)):
+        patient_data = utils.create_and_save_lung_mask(patient_data=patient_data,
+                                        output_dir=output_dir)
     
-    # lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
+    lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
 
 
-    # polar_converter = preprocessor.preprocess(
-    #     config=config['preprocessing'],
-    #     ct=ct,
-    #     ct_spacing=spacing,
-    #     atrium=atrium,
-    #     ventricle=ventricle,
-    #     lung=lung,
-    #     output_dir=output_dir,
-    #     doc_mask=doc_mask
-    # )
+    polar_converter = preprocessor.preprocess(
+        config=config['preprocessing'],
+        ct=ct,
+        ct_spacing=spacing,
+        atrium=atrium,
+        ventricle=ventricle,
+        lung=lung,
+        output_dir=output_dir,
+        doc_mask=doc_mask
+    )
 
-    # if polar_converter is None:
-    #     return
+    if polar_converter is None:
+        return
     
-    # print("Preprocessing finished successfully!")
+    print("Preprocessing finished successfully!")
 
-    # thresholds.create_and_rank_threshold_masks(
-    #     config=config['thresholds'],
-    #     output_dir=output_dir,
-    #     polar_converter=polar_converter
-    # )
-    # print("Thresholding finished successfully!")
+    thresholds.create_and_rank_threshold_masks(
+        config=config['thresholds'],
+        output_dir=output_dir,
+        polar_converter=polar_converter
+    )
+    print("Thresholding finished successfully!")
     
     best_threshold = postprocessor.postprocess(
         config=config["postprocessing"],
