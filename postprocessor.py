@@ -137,31 +137,33 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
     return best_threshold, nms_result
 
+class InputObject:
 
-def _get_input(input_dir):
-    with open(os.path.join(input_dir, "thresholds", "score_data.json"), 'r') as f:
-        score_data = json.load(f)
+    def __init__(self, input_dir):
+        with open(os.path.join(input_dir, "thresholds", "score_data.json"), 'r') as f:
+            self.score_data = json.load(f)
 
-    with open(os.path.join(input_dir, "preprocessing", "data.json"), 'r') as f:
-        data_dict = json.load(f)
+        with open(os.path.join(input_dir, "preprocessing", "data.json"), 'r') as f:
+            self.data_dict = json.load(f)
 
-    thresholds_dir = os.path.join(input_dir, "thresholds", "np")
+        self.thresholds_dir = os.path.join(input_dir, "thresholds", "np")
 
-    polar_grad = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_dir_grad.npy"))
+        self.polar_grad = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_dir_grad.npy"))
 
-    polar_ventricle_b = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
+        self.polar_ventricle_b = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
 
-    return score_data, data_dict, thresholds_dir, polar_grad, polar_ventricle_b
+def _get_input(input_dir) -> InputObject:
+    return InputObject(input_dir=input_dir)
 
 def postprocess(config, output_dir):
 
-    score_data, data_dict, thresholds_dir, polar_grad, polar_ventricle_b = _get_input(output_dir)
+    input_object = _get_input(output_dir)
 
     output_dir = os.path.join(output_dir, "postprocessing")
     os.makedirs(output_dir, exist_ok=True)
 
     nms_result = get_nms_result(config=config,
-                                score_data=score_data,
+                                score_data=input_object.score_data,
                                 nms_type=config["nms_type"],
                                 output_dir=output_dir)
     
@@ -171,10 +173,10 @@ def postprocess(config, output_dir):
     
     best_threshold, nms_result = dummy_decider(
         nms_result=nms_result,
-        data_dict=data_dict,
-        thresholds_dir=thresholds_dir,
-        polar_grad=polar_grad,
-        polar_ventricle_b=polar_ventricle_b
+        data_dict=input_object.data_dict,
+        thresholds_dir=input_object.thresholds_dir,
+        polar_grad=input_object.polar_grad,
+        polar_ventricle_b=input_object.polar_ventricle_b
     )
 
     with open(os.path.join(output_dir, "nms_result.json"), 'w') as f:
