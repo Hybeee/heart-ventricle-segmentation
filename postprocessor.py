@@ -120,7 +120,7 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
             boundary_points=polar_ventricle_b
         )
 
-        if best_score is None:
+        if best_threshold is None:
             best_score = total
             best_threshold = threshold
 
