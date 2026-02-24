@@ -113,14 +113,16 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
         total = np.abs(polar_grad[r_indices, theta_indices]).sum()
 
         assigned_valleys_t = _get_valley_indices(
-            threshold=threshold,
             polar_grad=polar_grad,
             boundary_points=polar_threshold_b)
         assigned_valleys_v = _get_valley_indices(
-            threshold=threshold,
             polar_grad=polar_grad,
             boundary_points=polar_ventricle_b
         )
+
+        if best_score is None:
+            best_score = total
+            best_threshold = threshold
 
         if np.any(assigned_valleys_t == assigned_valleys_v):
             print(f"Skipping {threshold}.")
@@ -128,10 +130,6 @@ def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
         print(f"\t{threshold}: {total}")
         nms_result[threshold]["total_depth"] = float(total)
-
-        if best_score is None:
-            best_score = total
-            best_threshold = threshold
 
         if total > best_score:
             best_score = total
