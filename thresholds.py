@@ -136,7 +136,8 @@ def _get_positive_gradient_count(polar_grad, polar_threshold_b, data_dict):
 
     return values_at_boundary[values_at_boundary > 0].shape[0]
 
-def _rank_thresholds(polar_grad, polar_ventricle_b,
+def _rank_thresholds(ventricle_mask, threshold_masks,
+                     polar_grad, polar_ventricle_b,
                      thresholds, polar_threshold_bs,
                      config, data_dict, output_dir):
     score_data = {}
@@ -148,9 +149,14 @@ def _rank_thresholds(polar_grad, polar_ventricle_b,
     min_score = np.inf
     best_threshold = None
 
-    for threshold, polar_threshold_b in zip(thresholds, polar_threshold_bs):
+    ventricle_area = np.sum(ventricle_mask == 1)
+
+    for threshold, threshold_mask, polar_threshold_b in zip(thresholds, threshold_masks, polar_threshold_bs):
         if polar_threshold_b.shape[0] != polar_ventricle_b.shape[0]:
             continue
+
+        curr_threshold_area = np.sum(threshold_mask == 1)
+        curr_area_ratio = curr_threshold_area / ventricle_area
 
         common_points = _get_common_points(polar_ventricle_b=polar_ventricle_b,
                                            polar_threshold_b=polar_threshold_b,
@@ -173,7 +179,9 @@ def _rank_thresholds(polar_grad, polar_ventricle_b,
             "mean_radial_difference": mean_radial_difference,
             "positive_gradient_count": positive_gradient_count,
             "score": score,
-            "avg_r": avg_r
+            "avg_r": avg_r,
+            "area": float(curr_threshold_area),
+            "area_ratio": float(curr_area_ratio)
         }
 
         if score < min_score:
@@ -189,27 +197,29 @@ def _rank_thresholds(polar_grad, polar_ventricle_b,
     with open(os.path.join(output_dir, "score_data.json"), 'w') as f:
         json.dump(score_data, f, indent=2)
 
-def _get_input(input_dir):
-    ct = np.load(os.path.join(input_dir, "np", "ct.npy"))
-    polar_grad = np.load(os.path.join(input_dir, "np", "polar_dir_grad.npy"))
-    polar_ventricle_b = np.load(os.path.join(input_dir, "np", "polar_ventricle_boundary.npy"))
-    ventricle_mask = np.load(os.path.join(input_dir, "np", "ventricle.npy"))
-    with open(os.path.join(input_dir, "data.json")) as f:
-        data_dict = json.load(f)
-    
-    return ct, polar_grad, ventricle_mask, polar_ventricle_b, data_dict
+class InputObject:
+    def __init__(self, input_dir):
+        self.ct = np.load(os.path.join(input_dir, "np", "ct.npy"))
+        self.polar_grad = np.load(os.path.join(input_dir, "np", "polar_dir_grad.npy"))
+        self.polar_ventricle_b = np.load(os.path.join(input_dir, "np", "polar_ventricle_boundary.npy"))
+        self.ventricle_mask = np.load(os.path.join(input_dir, "np", "ventricle.npy"))
+        with open(os.path.join(input_dir, "data.json")) as f:
+            self.data_dict = json.load(f)
+
+def _get_input(input_dir) -> InputObject:
+    return InputObject(input_dir=input_dir)
 
 
 def create_and_rank_threshold_masks(config, output_dir, polar_converter):
     preprocess_dir = os.path.join(output_dir, "preprocessing")
 
-    ct, polar_grad, ventricle_mask, polar_ventricle_b, data_dict = _get_input(input_dir=preprocess_dir)
+    input_object = _get_input(input_dir=preprocess_dir)
 
     output_dir = os.path.join(output_dir, "thresholds")
     os.makedirs(output_dir, exist_ok=True)
 
-    masks, mask_boundaries, polar_masks, polar_mask_boundaries, used_thresholds = _create_threshold_masks(ct=ct,
-                                                                                                          ventricle_mask=ventricle_mask,
+    masks, mask_boundaries, polar_masks, polar_mask_boundaries, used_thresholds = _create_threshold_masks(ct=input_object.ct,
+                                                                                                          ventricle_mask=input_object.ventricle_mask,
                                                                                                           polar_converter=polar_converter,
                                                                                                           config=config,
                                                                                                           output_dir=output_dir)
@@ -217,11 +227,13 @@ def create_and_rank_threshold_masks(config, output_dir, polar_converter):
     print("Ranking thresholds!")
 
     _rank_thresholds(
-        polar_grad=polar_grad,
-        polar_ventricle_b=polar_ventricle_b,
+        ventricle_mask=input_object.ventricle_mask,
+        threshold_masks=masks,
+        polar_grad=input_object.polar_grad,
+        polar_ventricle_b=input_object.polar_ventricle_b,
         thresholds=used_thresholds,
         polar_threshold_bs=polar_mask_boundaries,
         config=config,
-        data_dict=data_dict,
+        data_dict=input_object.data_dict,
         output_dir=output_dir
     )

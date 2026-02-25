@@ -61,6 +61,11 @@ def get_nms_result(config, score_data, nms_type, output_dir):
     else:
         nms_result = None
 
+    for threshold in nms_result.keys():
+        curr_result = nms_result[threshold]
+        curr_result["valid"] = ((curr_result["area_ratio"] > config["area_ratio_lower_threshold"])
+                                & (curr_result["area_ratio"] < config["area_ratio_upper_threshold"]))
+
     if nms_result:
         with open(os.path.join(output_dir, "nms_result.json"), 'w') as f:
             json.dump(nms_result, f, indent=2)
@@ -194,10 +199,11 @@ def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
                             for rv, theta in zip(valley_r_valid, theta_valid)])
         distances = (r_valid - valley_r_valid)**2
 
-        score = np.sum(weights * distances) / np.sum(weights)
+        score = np.sum(distances) / np.sum(weights)
         nms_result[threshold]["distance_decider_score"] = float(score)
         
-        if score < best_score:
+        valid = nms_result[threshold]["valid"]
+        if score < best_score and valid:
             best_score = score
             best_threshold = threshold
 
