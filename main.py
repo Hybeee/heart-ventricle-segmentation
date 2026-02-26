@@ -35,6 +35,14 @@ def _save_result_plots(output_dir, threshold):
     approx_mask_b = np.load(os.path.join(threshold_dir, "mask_boundary.npy"))
     approx_polar_mask_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
 
+    #region ORIGINAL RESULT WITHOUT MASK BOUNDARY
+    plt.imshow(ct, cmap='gray')
+    plt.axis('off')
+    plt.savefig(os.path.join(output_dir, "orig.png"))
+    plt.close()
+    #endregion
+
+    #region ORIGINAL RESULT WITH MASK BOUNDARY
     plt.imshow(ct, cmap='gray')
     if doc_mask_b is not None:
         plt.scatter(
@@ -59,7 +67,16 @@ def _save_result_plots(output_dir, threshold):
     plt.legend()
     plt.savefig(os.path.join(output_dir, "orig_result.png"))
     plt.close()
+    #endregion
 
+    #region POLAR RESULT WITHOUT MASK BOUNDARY
+    plt.imshow(polar_dir_grad, cmap='jet')
+    plt.axis('off')
+    plt.savefig(os.path.join(output_dir, "polar.png"))
+    plt.close()
+    #endregion
+
+    #region POLAR RESULT WITH MASK BOUNDARY
     plt.imshow(polar_dir_grad, cmap='jet')
     if polar_doc_mask_b is not None:
         plt.scatter(
@@ -84,6 +101,7 @@ def _save_result_plots(output_dir, threshold):
     plt.legend()
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()
+    #endregion
 
 
 def _save_result_json(output_dir, best_threshold):
