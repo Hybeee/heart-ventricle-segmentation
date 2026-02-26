@@ -127,7 +127,7 @@ def _save_result_json(output_dir, best_threshold):
         json.dump(result_json, f, indent=3)
 
 def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
-    output_dir = os.path.join(ROOT_DIR, "output", patient_id)
+    output_dir = os.path.join(ROOT_DIR, config["output_dir_name"], patient_id)
     os.makedirs(output_dir, exist_ok=True)
 
     ct_path = patient_data["ct_path"]

@@ -7,22 +7,37 @@ import json
 
 import utils
 
-def _get_middle_slice(nnunet_mask):
-    z_dim = nnunet_mask.shape[0]
+def _get_bbox_middle_slice_z(mask):
+    z_dim = mask.shape[0]
 
     for z in range(z_dim):
-        if np.any(nnunet_mask[z, :, :] == 1):
+        if np.any(mask[z, :, :] == 1):
             z_start = z
             break
 
     for z in reversed(range(z_dim)):
-        if np.any(nnunet_mask[z, :, :] == 1):
+        if np.any(mask[z, :, :] == 1):
             z_end = z
             break
 
     z_middle = (z_start + z_end) // 2
 
     return z_middle
+
+def _get_mask_center_of_mass_z(mask):
+    slice_counts= mask.sum(axis=(1, 2))
+    slices = np.arange(mask.shape[0])
+
+    return int(np.sum(slice_counts * slices) / np.sum(slice_counts))
+
+def _get_middle_slice(method_type: str, nnunet_mask: np.ndarray):
+    if method_type.lower() == "bbox_middle":
+        return _get_bbox_middle_slice_z(mask=nnunet_mask)
+    elif method_type.lower() == "center_of_mass":
+        return _get_mask_center_of_mass_z(mask=nnunet_mask)
+    else:
+        print(f"Unknown type of center calculation method: {method_type}")
+        return None
 
 def _create_polar_converter(center, ct):
     maxRadius = min(
@@ -112,7 +127,10 @@ def preprocess(config: dict,
     output_dir_np = os.path.join(output_dir, "np")
     os.makedirs(output_dir_np, exist_ok=True)
 
-    z_middle = _get_middle_slice(nnunet_mask=ventricle)
+    z_middle = _get_middle_slice(method_type=config["center_method"],
+                                 nnunet_mask=ventricle)
+    if z_middle is None:
+        return
 
     ct = ct[z_middle, :, :]
     if doc_mask is not None:

@@ -207,7 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Project
-output/
+*output*/
 patients_data.json
 config.yaml
 patients_to_process.txt
