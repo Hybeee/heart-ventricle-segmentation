@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import SimpleITK as sitk
 
 import os
 import yaml
@@ -103,6 +104,15 @@ def _save_result_plots(output_dir, threshold):
     plt.close()
     #endregion
 
+def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, output_path: str):
+    mask_sitk = sitk.GetImageFromArray(mask_3d.astype(np.uint8))
+    
+    mask_sitk.SetSpacing(reference_image.GetSpacing())
+    mask_sitk.SetOrigin(reference_image.GetOrigin())
+    mask_sitk.SetDirection(reference_image.GetDirection())
+
+    sitk.WriteImage(mask_sitk, output_path)
+
 
 def _save_result_json(output_dir, best_threshold):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
@@ -171,7 +181,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         doc_mask = None
     
     nnunet_mask_path = patient_data["nnunet_mask_path"]
-    nnunet_mask = utils.scan_to_np_array(nnunet_mask_path)
+    nnunet_mask_sitk, nnunet_mask = utils.scan_to_np_array(nnunet_mask_path, return_sitk=True)
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
     atrium = (nnunet_mask == 1).astype(nnunet_mask.dtype)
 
@@ -210,6 +220,21 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         config=config["postprocessing"],
         output_dir=output_dir
     )
+
+    if config["postprocessing"]["save_3d_mask"]:
+        mask_3d = postprocessor.save_3d_mask(
+            ct=ct,
+            ventricle_mask=ventricle,
+            best_threshold=best_threshold
+        )
+
+        _save_mask_with_reference(
+            mask_3d=mask_3d,
+            reference_image=nnunet_mask_sitk,
+            output_path=os.path.join(output_dir, "mask.nii.gz")
+        )
+
+
 
     print("Postprocessing finished successfully!")
 

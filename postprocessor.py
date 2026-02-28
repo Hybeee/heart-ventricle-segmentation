@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage import measure
 
 import os
 import json
@@ -209,6 +210,21 @@ def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
     return best_threshold, nms_result
 
+def save_3d_mask(ct, ventricle_mask, best_threshold):
+    assert ct.shape == ventricle_mask.shape and len(ct.shape) == 3
+
+    best_threshold = float(best_threshold)
+
+    mask = np.zeros_like(ct)
+    mask[ct > best_threshold] = 1
+    mask[ventricle_mask == 0] = 0
+
+    labels = measure.label(mask, connectivity=1)
+    props = measure.regionprops(labels)
+    largest_label = max(props, key=lambda x: x.area).label
+    mask = (labels == largest_label).astype(mask.dtype)
+
+    return mask
 
 class InputObject:
     def __init__(self, input_dir):
