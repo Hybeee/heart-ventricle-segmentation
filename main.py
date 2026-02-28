@@ -77,6 +77,12 @@ def _save_result_plots(output_dir, threshold):
     plt.close()
     #endregion
 
+    with open(os.path.join(output_dir, "preprocessing", "data.json")) as f:
+        data_dict = json.load(f)
+    
+    first_theta = data_dict["lung_data"]["ends"][0]
+    second_theta = data_dict["lung_data"]["starts"][1]
+
     #region POLAR RESULT WITH MASK BOUNDARY
     plt.imshow(polar_dir_grad, cmap='jet')
     if polar_doc_mask_b is not None:
@@ -98,6 +104,14 @@ def _save_result_plots(output_dir, threshold):
         alpha=0.3,
         label='Approximation'
     )
+    for theta in [first_theta, second_theta]:
+        plt.axvline(
+            x=theta,
+            color='r',
+            linestyle='--',
+            linewidth=1,
+            alpha=0.5
+        )
     plt.axis('off')
     plt.legend()
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
