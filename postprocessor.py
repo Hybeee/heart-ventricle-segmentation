@@ -200,7 +200,8 @@ def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
                             for rv, theta in zip(valley_r_valid, theta_valid)])
         distances = (r_valid - valley_r_valid)**2
 
-        score = np.sum(weights * distances) / np.sum(weights)
+        weights_sum = np.sum(weights)
+        score = np.sum(weights * distances) / weights_sum if weights_sum > 0 else np.inf
         nms_result[threshold]["distance_decider_score"] = float(score)
         
         valid = nms_result[threshold]["valid"]
