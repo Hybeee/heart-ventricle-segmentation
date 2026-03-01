@@ -112,7 +112,6 @@ def _save_result_plots(output_dir, threshold):
             linewidth=1,
             alpha=0.5
         )
-    plt.axis('off')
     plt.legend()
     plt.savefig(os.path.join(output_dir, "polar_result.png"))
     plt.close()

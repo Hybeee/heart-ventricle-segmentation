@@ -7,6 +7,8 @@ import SimpleITK as sitk
 import nibabel as nib
 from totalsegmentator.python_api import totalsegmentator
 
+from postprocessor import ValleyData
+
 import os
 
 def scan_to_np_array(scan_path, return_sitk=False, return_spacing=False):
@@ -160,6 +162,34 @@ def clip_polar_gradients(polar_dir_grad_ct, grad_clip=2200):
         grad_image[grad_image.shape[0] - 1, grad_image.shape[1] - 1] = grad_clip
 
         return grad_image
+
+def plot_valley_data(valley_data: ValleyData, masks: list, mask_labels: list, theta: int,
+                     save_dir: str, save_name: str, save: bool=True):
+    plt.plot(valley_data.fo_deriv[:, theta][:100])
+    plt.xlabel("Radii")
+    plt.ylabel("Gradient value")
+    plt.grid(True)
+
+    for i, mask in enumerate(masks):
+        mask_radius = mask[theta][0]
+        mask_value = valley_data.fo_deriv[mask_radius, theta]
+
+        random_color = np.random.rand(3,)
+
+        plt.scatter(
+            mask_radius,
+            mask_value,
+            s=5,
+            color=random_color,
+            label=mask_labels[i]
+        )
+
+    plt.legend()
+    if save:
+        plt.savefig(os.path.join(save_dir, f"{save_name}.png"))
+        plt.close()
+    else:
+        plt.show()
 
 def main():
     import os
