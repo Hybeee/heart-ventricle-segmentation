@@ -59,6 +59,8 @@ def get_nms_result(config, score_data, nms_type, output_dir):
         nms_result = get_nms_radius(config=config, score_data=score_data)
     elif nms_type == "threshold":
         nms_result = get_nms_threshold(config=config, score_data=score_data)
+    elif nms_type == "no_nms":
+        nms_result = score_data
     else:
         nms_result = None
 
