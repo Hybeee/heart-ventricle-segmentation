@@ -11,6 +11,7 @@ import utils
 import preprocessor
 import thresholds
 import postprocessor
+import new_method
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -131,13 +132,13 @@ def _save_result_json(output_dir, best_threshold):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
 
-    with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
-        thresholds_json = json.load(f)
+    # with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
+    #     thresholds_json = json.load(f)
     
     ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
     ventricle_area = np.sum(ventricle == 1)
 
-    with open(os.path.join(output_dir, "postprocessing", "nms_result.json"), 'r') as f:
+    with open(os.path.join(output_dir, "postprocessing", "results.json"), 'r') as f:
         postproc_json = json.load(f)
     
     
@@ -160,7 +161,7 @@ def _save_result_json(output_dir, best_threshold):
     result_json = {
         "output_data": output_data,
         "preprocessing": preproc_json,
-        "thresholds": thresholds_json,
+        # "thresholds": thresholds_json,
         "postprocessing": postproc_json
     }
 
@@ -229,7 +230,12 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     )
     print("Thresholding finished successfully!")
     
-    best_threshold = postprocessor.postprocess(
+    # best_threshold = postprocessor.postprocess(
+    #     config=config["postprocessing"],
+    #     output_dir=output_dir
+    # )
+
+    best_threshold = new_method.calculate_approximation(
         config=config["postprocessing"],
         output_dir=output_dir
     )

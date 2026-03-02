@@ -226,14 +226,14 @@ def create_and_rank_threshold_masks(config, output_dir, polar_converter):
 
     print("Ranking thresholds!")
 
-    _rank_thresholds(
-        ventricle_mask=input_object.ventricle_mask,
-        threshold_masks=masks,
-        polar_grad=input_object.polar_grad,
-        polar_ventricle_b=input_object.polar_ventricle_b,
-        thresholds=used_thresholds,
-        polar_threshold_bs=polar_mask_boundaries,
-        config=config,
-        data_dict=input_object.data_dict,
-        output_dir=output_dir
-    )
+    # _rank_thresholds(
+    #     ventricle_mask=input_object.ventricle_mask,
+    #     threshold_masks=masks,
+    #     polar_grad=input_object.polar_grad,
+    #     polar_ventricle_b=input_object.polar_ventricle_b,
+    #     thresholds=used_thresholds,
+    #     polar_threshold_bs=polar_mask_boundaries,
+    #     config=config,
+    #     data_dict=input_object.data_dict,
+    #     output_dir=output_dir
+    # )
