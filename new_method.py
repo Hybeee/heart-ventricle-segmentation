@@ -40,7 +40,20 @@ def _calculate_valley_score(polar_grad, polar_threshold_b, polar_ventricle_b,
     weights_sum = np.sum(weights)
     score = np.sum(weights * distances) / weights_sum if weights_sum > 0 else np.inf
 
-    return score
+    score_data = {
+        "valid_mask_data": {
+            "length": len(np.where(valid_mask)[0]),
+            "valid_mask_indices": np.where(valid_mask)[0].tolist()
+        },
+        "distances^2": distances.tolist(),
+        "valley_data": {
+            "mean_valley": float(t_assigned_valleys.mean()),
+            "var_valley": float(t_assigned_valleys.var()),
+            "assigned_valleys": t_assigned_valleys.tolist()
+        }
+    }
+
+    return score, score_data
 
 def _get_mean_radial_difference(polar_threshold_b: np.ndarray,
                                 starts: list[int], ends: list[int]):
@@ -92,7 +105,7 @@ def _approximate_best_threshold(config, ventricle_mask,
 
         polar_threshold_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
 
-        valley_score = _calculate_valley_score(
+        valley_score, valley_score_data = _calculate_valley_score(
             polar_grad=polar_grad,
             polar_threshold_b=polar_threshold_b,
             polar_ventricle_b=polar_ventricle_b,
@@ -118,7 +131,8 @@ def _approximate_best_threshold(config, ventricle_mask,
             "score_components": {
                 "valley_score": float(valley_score),
                 "mean_radial_difference": float(mean_radial_difference)
-            }
+            },
+            "valley_score_data": valley_score_data
         }
 
     result_dict = dict(
