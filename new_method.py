@@ -4,6 +4,7 @@ import os
 import json
 
 from postprocessor import ValleyData
+from utils import plot_valley_data
 
 def _get_validity(config, threshold_area, ventricle_area):
     area_ratio = threshold_area / ventricle_area
@@ -15,7 +16,8 @@ def _get_validity(config, threshold_area, ventricle_area):
 
 def _calculate_valley_score(polar_grad, polar_threshold_b, polar_ventricle_b,
                             valley_data: ValleyData,
-                            starts: list[int], ends: list[int]):
+                            starts: list[int], ends: list[int],
+                            threshold: str):
     r_indices = polar_threshold_b[:, 0].astype(int)
     theta_indices = polar_threshold_b[:, 1].astype(int)
 
@@ -25,11 +27,27 @@ def _calculate_valley_score(polar_grad, polar_threshold_b, polar_ventricle_b,
     v_valley_data = valley_data.get_valley_data(boundary_points=polar_ventricle_b)
     (v_assigned_valleys, _) = v_valley_data
 
-    valid_mask = (
-        ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
-    ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
+    # valid_mask = (
+    #     ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
+    # ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
 
-    # valid_mask = (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
+    ventricle_r_indices = polar_ventricle_b[:, 0].astype(int)
+    ventricle_theta_indices = polar_ventricle_b[:, 1].astype(int)
+    ventricle_values = polar_grad[ventricle_r_indices, ventricle_theta_indices]
+
+    valid_mask = ((r_indices != -1) & 
+                  ((t_assigned_valleys != v_assigned_valleys) | (ventricle_values > 0)))
+
+    # if threshold == "117.72":
+    #     print(np.where(valid_mask))
+    #     plot_valley_data(
+    #         valley_data=valley_data,
+    #         masks=[polar_threshold_b, polar_ventricle_b],
+    #         mask_labels=['approx', 'nnunet'],
+    #         theta=260,
+    #         save_dir='.',
+    #         save_name='test'
+    #     )
 
     r_valid = r_indices[valid_mask]
     theta_valid = theta_indices[valid_mask]
@@ -113,7 +131,8 @@ def _approximate_best_threshold(config, ventricle_mask,
             polar_ventricle_b=polar_ventricle_b,
             valley_data=valley_data,
             starts=starts,
-            ends=ends
+            ends=ends,
+            threshold=threshold
         )
 
         mean_radial_difference = _get_mean_radial_difference(

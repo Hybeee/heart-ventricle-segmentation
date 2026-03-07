@@ -170,6 +170,19 @@ def plot_valley_data(valley_data: ValleyData, masks: list, mask_labels: list, th
     plt.ylabel("Gradient value")
     plt.grid(True)
 
+    curr_valleys_rs = valley_data.valley_positions[theta]
+    curr_valleys_rs = curr_valleys_rs[curr_valleys_rs < 100]
+    curr_valleys_values = valley_data.fo_deriv[curr_valleys_rs, theta]
+    valley_color = np.random.rand(3,)
+
+    plt.scatter(
+        curr_valleys_rs,
+        curr_valleys_values,
+        s=5,
+        color=valley_color,
+        label='Valley'
+    )
+
     for i, mask in enumerate(masks):
         mask_radius = mask[theta][0]
         mask_value = valley_data.fo_deriv[mask_radius, theta]
