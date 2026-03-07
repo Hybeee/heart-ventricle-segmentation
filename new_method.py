@@ -29,6 +29,8 @@ def _calculate_valley_score(polar_grad, polar_threshold_b, polar_ventricle_b,
         ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
     ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
 
+    # valid_mask = (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
+
     r_valid = r_indices[valid_mask]
     theta_valid = theta_indices[valid_mask]
     valley_r_valid = t_assigned_valley_positions[valid_mask]

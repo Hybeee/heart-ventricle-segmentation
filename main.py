@@ -33,6 +33,8 @@ def _save_result_plots(output_dir, threshold):
     else:
         polar_doc_mask_b = None
 
+    nnunet_polar_mask_b = np.load(os.path.join(output_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
+
     threshold_dir = os.path.join(output_dir, "thresholds", "np", str(threshold))
     approx_mask_b = np.load(os.path.join(threshold_dir, "mask_boundary.npy"))
     approx_polar_mask_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
@@ -96,6 +98,15 @@ def _save_result_plots(output_dir, threshold):
             alpha=0.3,
             label='Doc/GT'
         )
+    plt.scatter(
+        nnunet_polar_mask_b[:, 1],
+        nnunet_polar_mask_b[:, 0],
+        s=1,
+        marker='o',
+        c='blue',
+        alpha=0.3,
+        label='NNUnet'
+    )
     plt.scatter(
         approx_polar_mask_b[:, 1],
         approx_polar_mask_b[:, 0],
