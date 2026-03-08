@@ -35,19 +35,12 @@ def _calculate_valley_score(polar_grad, polar_threshold_b, polar_ventricle_b,
     ventricle_theta_indices = polar_ventricle_b[:, 1].astype(int)
     ventricle_values = polar_grad[ventricle_r_indices, ventricle_theta_indices]
 
-    valid_mask = ((r_indices != -1) & 
+    valid_mask = ((r_indices > 0) & 
                   ((t_assigned_valleys != v_assigned_valleys) | (ventricle_values > 0)))
 
-    # if threshold == "117.72":
-    #     print(np.where(valid_mask))
-    #     plot_valley_data(
-    #         valley_data=valley_data,
-    #         masks=[polar_threshold_b, polar_ventricle_b],
-    #         mask_labels=['approx', 'nnunet'],
-    #         theta=260,
-    #         save_dir='.',
-    #         save_name='test'
-    #     )
+    # valid_mask = ((r_indices > 0) & 
+    #             ((t_assigned_valleys != v_assigned_valleys) | (ventricle_values > 0))
+    #             & (polar_grad[r_indices, theta_indices] < 0))
 
     r_valid = r_indices[valid_mask]
     theta_valid = theta_indices[valid_mask]
