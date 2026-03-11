@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 from scipy.ndimage import convolve, gaussian_filter
+from skimage.morphology import disk
+import scipy.ndimage as ndimage
 import matplotlib.pyplot as plt
 from skimage import measure
 import SimpleITK as sitk
@@ -203,6 +205,88 @@ def plot_valley_data(valley_data: ValleyData, masks: list, mask_labels: list, th
         plt.close()
     else:
         plt.show()
+
+def remove_segmentation_leakage(arc_mask, pixel_spacing):
+        # fill small holes in the mask (the holes are created by the thresholding step)
+        se_8_connectivity = np.zeros((3, 3, 3))
+        se_8_connectivity[1] = 1
+        connected_components, _ = ndimage.label(~arc_mask, se_8_connectivity)
+        unique_values, values_counts = np.unique(connected_components, return_counts=True)
+        big_hole_indices = unique_values[values_counts > ((2.5/pixel_spacing[1])**2)]
+        arc_mask_imfilled = ~np.isin(connected_components, big_hole_indices) | arc_mask
+        # calculate dt on the imfilled (only small holes are filled) mask
+        arc_mask_dt = ndimage.distance_transform_edt(arc_mask_imfilled, sampling=[1000, 1, 1])  # "2D" dt
+        # dilate dt values and compare it to the dt values to find seeds for the main part of the aorta
+        diam_small = round(4/pixel_spacing[1])
+        diam_small = diam_small - diam_small % 2 + 1
+
+        radius = diam_small // 2
+        structure = np.zeros((1, diam_small, diam_small), dtype=bool)
+
+        yy, xx = np.ogrid[:diam_small, :diam_small]
+        center = radius
+
+        structure[0] = (yy - center) ** 2 + (xx - center) ** 2 <= radius ** 2
+
+        dilated_dt = ndimage.grey_dilation(
+            arc_mask_dt,
+            footprint=structure
+        )
+
+        dt_max_values = dilated_dt.max(axis=(1, 2))
+
+        dt_seed_mask = (
+             np.isclose(dilated_dt, arc_mask_dt, rtol=0, atol=0.5)
+             & (arc_mask_dt > 0)
+             & (arc_mask_dt > dt_max_values[:, None, None] * 0.5)
+        )
+
+        # find the number of erosions that is needed to split from the main part of the aorta (iterative algo)
+        # init:  marching_state[x] = dt[x], if x is a seed pont, else 0
+        # marching_state[x]=max(marching_state[x],min(dt(x),max(marching_state[Neighbour(x)])
+        seed_points = np.stack(dt_seed_mask.nonzero()).T
+        neighbors_d = np.array([[0, -1, -1], [0, -1, 0], [0, -1, 1],
+                                [0, 0, -1], [0, 0, 1],
+                                [0, 1, -1], [0, 1, 0], [0, 1, 1]])
+        new_points = seed_points
+        marching_state = np.zeros_like(arc_mask_dt)
+        marching_state[tuple(new_points.T)] = arc_mask_dt[tuple(new_points.T)]
+        new_points_neighbors = new_points[:, None, :] + neighbors_d[None, ...]
+        new_points = new_points_neighbors.reshape((-1, 3))
+        while len(new_points) > 0:
+            # print(len(new_points))
+            new_points = np.unique(new_points, axis=0)
+            neighbors = new_points[:, None, :] + neighbors_d[None, ...]
+            current_seed_vals = marching_state[tuple(new_points.T)]
+            neighbour_vals = marching_state[tuple(np.moveaxis(neighbors, 2, 0))]
+            current_seed_dt_vals = arc_mask_dt[tuple(new_points.T)]
+            marching_state[tuple(new_points.T)] = np.maximum(current_seed_vals,
+                                                             np.minimum(current_seed_dt_vals,
+                                                                        neighbour_vals.max(axis=-1)))
+            changed_points = marching_state[tuple(new_points.T)] != current_seed_vals
+            new_points_changed = new_points[changed_points]
+            changed_points_neighbors = new_points_changed[:, None, :] + neighbors_d[None, ...]
+            new_points = changed_points_neighbors.reshape((-1, 3))
+        # select homogenous islands from the marching state values --> indicates leaks
+        se = np.ones((1, 3, 3))
+        march_erosion = ndimage.grey_erosion(
+             marching_state,
+             footprint=se
+        )
+        island_mask = (np.isclose(marching_state, march_erosion, rtol=0, atol=0.5)
+                       & (marching_state > 0))
+        # remove these islands
+        max_connection_half_width = round(2.22 / pixel_spacing[1])
+        n_erosions_needed = np.max((island_mask & (marching_state < max_connection_half_width))
+                                   * marching_state, axis=(1, 2))
+        reconstruction_base = marching_state > n_erosions_needed[:, None, None]
+        # fix the parts removed from the main part by dilation
+        arc_mask_reconstructed = np.array([ndimage.binary_dilation(base_mask, disk(round(d)), mask=mask)
+                                           if d > 0 else base_mask
+                                           for base_mask, d, mask in zip(reconstruction_base,
+                                                                         n_erosions_needed,
+                                                                         arc_mask_imfilled)])
+        return arc_mask_reconstructed
 
 def main():
     import os

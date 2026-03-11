@@ -252,7 +252,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     )
 
     if config["postprocessing"]["save_3d_mask"]:
-        mask_3d = postprocessor.save_3d_mask(
+        mask_3d = postprocessor.get_3d_mask(
             ct=ct,
             ventricle_mask=ventricle,
             best_threshold=best_threshold
@@ -262,6 +262,19 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
             mask_3d=mask_3d,
             reference_image=nnunet_mask_sitk,
             output_path=os.path.join(output_dir, "mask.nii.gz")
+        )
+
+        print("Starting algorithm")
+        reconstr_mask = utils.remove_segmentation_leakage(
+            arc_mask=mask_3d,
+            pixel_spacing=spacing
+        )
+        reconstr_mask = reconstr_mask.astype(np.uint8)
+
+        _save_mask_with_reference(
+            mask_3d=reconstr_mask,
+            reference_image=nnunet_mask_sitk,
+            output_path=os.path.join(output_dir, "mask_reconstr.nii.gz")
         )
 
 
@@ -302,7 +315,7 @@ def main():
     with open(os.path.join(ROOT_DIR, "patients_data.json"), 'r') as f:
         patients_data = yaml.safe_load(f)
 
-    patient_id = "patient_0001"
+    patient_id = "patient_0002"
     patient_data = patients_data[patient_id]
     _process_one_patient(
         patient_id=patient_id,
