@@ -25,7 +25,7 @@ def save_images(image1, image2, output_dir, name, cmap, title, titles):
     plt.close()
 
 def main():
-    output_dir = os.path.join(ROOT_DIR, "comparer_results_bbox_middle_ovsn")
+    output_dir = os.path.join(ROOT_DIR, "comparer_results_bbm_vs_com")
     os.makedirs(output_dir, exist_ok=True)
 
     patients_to_process = []
@@ -37,7 +37,7 @@ def main():
     dir1_name = "other_test_output_bbox_middle_old_w0"
     dir_no_nms = os.path.join(ROOT_DIR, dir1_name)
 
-    dir2_name = "other_test_output_bbox_middle"
+    dir2_name = "other_test_output_com_old_w0"
     dir_invalid_exclude = os.path.join(ROOT_DIR, dir2_name)
 
     for patient_id in patients_to_process:
@@ -58,8 +58,12 @@ def main():
         if dir1_threshold != dir2_threshold or 5 == 5:
             dir1_threshold_ts = dir1_result["postprocessing"][str(dir1_threshold)]["total_score"]
             dir2_threshold_ts = dir2_result["postprocessing"][str(dir2_threshold)]["total_score"]
-            
+            dir1_slice = dir1_result["preprocessing"]["middle_slice_index"]
+            dir2_slice = dir2_result["preprocessing"]["middle_slice_index"]
+
+
             title = f"Thresholds: {dir1_threshold} - {dir2_threshold}\nTotal scores: {dir1_threshold_ts} - {dir2_threshold_ts}"
+            title += f"\nSlice: {dir1_slice} - {dir2_slice}"
 
             dir1_image = cv2.imread(os.path.join(dir1_pd, "orig_result.png"))
             dir1_image = cv2.cvtColor(dir1_image, cv2.COLOR_BGR2RGB)
