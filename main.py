@@ -139,7 +139,7 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
     sitk.WriteImage(mask_sitk, output_path)
 
 
-def _save_result_json(output_dir, best_threshold):
+def _save_result_json(output_dir, best_threshold, mask_metrics):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
 
@@ -166,7 +166,8 @@ def _save_result_json(output_dir, best_threshold):
 
     output_data = {
         "best_threshold": float(best_threshold),
-        "area_data": area_data
+        "area_data": area_data,
+        "mask_metrics": mask_metrics
     }
 
     result_json = {
@@ -277,6 +278,21 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
             output_path=os.path.join(output_dir, "mask_reconstr.nii.gz")
         )
 
+        base_mask_metrics = utils.calculate_mask_metrics(
+            prediction=mask_3d,
+            ground_truth=doc_mask
+        )
+
+        reconstr_mask_metrics = utils.calculate_mask_metrics(
+            prediction=reconstr_mask,
+            ground_truth=doc_mask
+        )
+
+        mask_metrics = {
+            "base_mask": base_mask_metrics,
+            "reconstructed_mask": reconstr_mask_metrics
+        }
+
 
 
     print("Postprocessing finished successfully!")
@@ -288,7 +304,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
 
     _save_result_json(
         output_dir=output_dir,
-        best_threshold=best_threshold
+        best_threshold=best_threshold,
+        mask_metrics=mask_metrics
     )
 
     if config["cleanup"]:
@@ -315,7 +332,7 @@ def main():
     with open(os.path.join(ROOT_DIR, "patients_data.json"), 'r') as f:
         patients_data = yaml.safe_load(f)
 
-    patient_id = "patient_0002"
+    patient_id = "patient_0001"
     patient_data = patients_data[patient_id]
     _process_one_patient(
         patient_id=patient_id,

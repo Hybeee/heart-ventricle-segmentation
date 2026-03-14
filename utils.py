@@ -288,6 +288,25 @@ def remove_segmentation_leakage(arc_mask, pixel_spacing):
                                                                          arc_mask_imfilled)])
         return arc_mask_reconstructed
 
+def calculate_mask_metrics(prediction, ground_truth):
+    assert prediction.shape == ground_truth.shape
+
+    prediction = np.asarray(prediction).astype(bool)
+    ground_truth = np.asarray(ground_truth).astype(bool)
+
+    intersection = np.logical_and(prediction, ground_truth).sum()
+    union = np.logical_or(prediction, ground_truth).sum()
+
+    iou = intersection / union if union > 0 else 1.0
+    dice = (2.0 * intersection) / (prediction.sum() + ground_truth.sum()) if (prediction.sum() + ground_truth.sum()) > 0 else 1.0
+
+    result = {
+        "iou": iou,
+        "dice_score": dice
+    }
+
+    return result
+
 def main():
     import os
     polar_doc_mask = np.load(os.path.join("szaniszlo", "code", "output",

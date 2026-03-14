@@ -224,7 +224,7 @@ def create_and_rank_threshold_masks(config, output_dir, polar_converter):
                                                                                                           config=config,
                                                                                                           output_dir=output_dir)
 
-    print("Ranking thresholds!")
+    # print("Ranking thresholds!")
 
     # _rank_thresholds(
     #     ventricle_mask=input_object.ventricle_mask,

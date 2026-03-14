@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import measure
+import scipy.ndimage as ndimage
+from skimage.morphology import ball
 
 import os
 import json
@@ -221,6 +222,9 @@ def get_3d_mask(ct, ventricle_mask, best_threshold):
     mask = np.zeros_like(ct)
     mask[ct > best_threshold] = 1
     mask[ventricle_mask == 0] = 0
+
+    # # experimental dilation
+    # mask = ndimage.binary_dilation(mask, ball(2))
 
     return mask
 
