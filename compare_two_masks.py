@@ -18,7 +18,7 @@ def _get_masks(ct, nnunet_mask, threshold1, threshold2):
     mask1[ct > threshold1] = 1
     mask1[nnunet_mask == 0] = 0
 
-    mask2 = [ct > threshold2] = 1
+    mask2[ct > threshold2] = 1
     mask2[nnunet_mask == 0] = 0
 
     return mask1, mask2
@@ -43,12 +43,12 @@ def _get_patient_info(patient_data, patient_id, dir1, dir2):
         result2 = json.load(f)
 
     first_data = {
-        "threshold": result1["best_threshold"],
+        "threshold": result1["output_data"]["best_threshold"],
         "middle_slice": result1["preprocessing"]["middle_slice_index"]
     }
 
     second_data = {
-        "threshold": result2["best_threshold"],
+        "threshold": result2["output_data"]["best_threshold"],
         "middle_slice": result2["preprocessing"]["middle_slice_index"]
     }
 
@@ -57,9 +57,9 @@ def _get_patient_info(patient_data, patient_id, dir1, dir2):
     metric = _get_mask_similarity(mask1, mask2)
 
     threshold_data = {
-        "m1": result1["best_threshold"],
-        "m2": result2["best_thresholds"],
-        "abs_diff": np.abs(result1["best_threshold"] - result2["best_threshold"])
+        "m1": result1["output_data"]["best_threshold"],
+        "m2": result2["output_data"]["best_threshold"],
+        "abs_diff": np.abs(result1["output_data"]["best_threshold"] - result2["output_data"]["best_threshold"])
     }
 
     middle_slice_data = {
@@ -86,7 +86,7 @@ def main():
     patients_to_process = []
     with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as f:
         for line in f:
-            line = line.strip
+            line = line.strip()
             patients_to_process.append(line)
 
     name1= "bbox_middle"
@@ -110,8 +110,10 @@ def main():
             **data
         }
 
-        with open(os.path.join(os.path.join(output_dir, "data.json"))) as f:
-            json.dump(data, f, indent=2)
+        with open(os.path.join(os.path.join(output_dir, "data.json")), 'w') as f:
+            json.dump(data, f, indent=2, default=lambda x: x.item())
+        
+        return
 
 if __name__ == "__main__":
     main()
