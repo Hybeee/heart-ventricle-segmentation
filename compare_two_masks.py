@@ -99,7 +99,13 @@ def main():
         print(f"One of the given directories does not exist!")
         return
     
+    output_data = {}
+
     for patient_id in patients_to_process:
+        if patient_id == "patient_0025":
+            continue
+
+        print(patient_id)
         data = _get_patient_info(patients_data[patient_id], patient_id, dir1, dir2)
 
         data = {
@@ -110,10 +116,18 @@ def main():
             **data
         }
 
-        with open(os.path.join(os.path.join(output_dir, "data.json")), 'w') as f:
-            json.dump(data, f, indent=2, default=lambda x: x.item())
-        
-        return
+        output_data[patient_id] = data
+    
+    sorted_data = sorted(
+        output_data.items(),
+        key=lambda x: x[1]["score"],
+        reverse=True
+    )
+
+    output_data = dict(sorted_data)
+
+    with open(os.path.join(output_dir, "data.json"), 'w') as f:
+        json.dump(output_data, f, indent=2, default=lambda x: x.item())
 
 if __name__ == "__main__":
     main()
