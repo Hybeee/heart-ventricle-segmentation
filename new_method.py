@@ -88,6 +88,44 @@ def _get_mean_radial_difference(polar_threshold_b: np.ndarray,
     
     return np.array(radial_difference).mean()
 
+def _normalize_results(result_dict):
+    valley_scores = []
+    mrd_scores = []
+
+    for _, v in result_dict.items():
+        if not v["valid"]:
+            continue
+
+        valley_scores.append(v["score_components"]["valley_score"])
+        mrd_scores.append(v["score_components"]["mean_radial_difference"])
+    
+    mean_valley = np.array(valley_scores).mean()
+    var_valley = np.array(valley_scores).std()
+
+    mean_mrd = np.array(mrd_scores).mean()
+    var_mrd = np.array(mrd_scores).std()
+
+    new_dict = {}
+
+    for k, v in result_dict.items():
+        valley_score = v["score_components"]["valley_score"]
+        mrd_score = v["score_components"]["mean_radial_difference"]
+
+        norm_valley = (valley_score - mean_valley) / var_valley
+        norm_mrd = (mrd_score - mean_mrd) / var_mrd
+
+        new_dict[k] = {
+            "valid": v["valid"],
+            "total_score": float(norm_valley + norm_mrd),
+            "score_components": {
+                "valley_score": 2.0 * float(norm_valley),
+                "mean_radial_difference": float(norm_mrd)
+            },
+            "valley_score_data": v["valley_score_data"]
+        }
+
+    return new_dict
+
 def _approximate_best_threshold(config, ventricle_mask,
                                 polar_grad, polar_ventricle_b,
                                 thresholds_dir: str, data_dict: dict):
@@ -149,9 +187,17 @@ def _approximate_best_threshold(config, ventricle_mask,
             "valley_score_data": valley_score_data
         }
 
+    result_dict = _normalize_results(result_dict)
+
     result_dict = dict(
         sorted(result_dict.items(), key=lambda item: item[1]["total_score"])
     )
+
+    best_threshold = None
+    for threshold, data in result_dict.items():
+        if data["valid"]:
+            best_threshold = threshold
+            break
 
     return best_threshold, result_dict
 

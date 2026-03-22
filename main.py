@@ -252,6 +252,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         output_dir=output_dir
     )
 
+    mask_metrics = {}
     if config["postprocessing"]["save_3d_mask"]:
         mask_3d = postprocessor.get_3d_mask(
             ct=ct,
