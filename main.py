@@ -10,7 +10,7 @@ import json
 import utils
 import preprocessor
 import thresholds
-import postprocessor
+from postprocessor import PostProcessor
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -235,6 +235,11 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         polar_converter=polar_converter
     )
     print("Thresholding finished successfully!")
+
+    postprocessor = PostProcessor(
+        config=config["postprocessing"],
+        output_dir=output_dir
+    )
 
     best_threshold = postprocessor.calculate_approximation(
         config=config["postprocessing"],
