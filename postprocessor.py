@@ -1,80 +1,19 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.ndimage as ndimage
-from skimage.morphology import ball
 
 import os
 import json
 
-def get_nms_radius(config, score_data):
-    delta = config["nms_radius_delta"]
+class InputObject:
+    def __init__(self, input_dir):
+        with open(os.path.join(input_dir, "preprocessing", "data.json"), 'r') as f:
+            self.data_dict = json.load(f)
 
-    anchor_points = []
-    nms_result = {}
+        self.thresholds_dir = os.path.join(input_dir, "thresholds", "np")
 
-    for threshold in score_data:
-        if len(anchor_points) == 0:
-            anchor_points.append(score_data[threshold]["avg_r"])
-            nms_result[threshold] = score_data[threshold]
-            continue
-            
-        overlapping = False
-        for anchor_point in anchor_points:
-            curr_avg_r = score_data[threshold]["avg_r"]
-            if abs(curr_avg_r - anchor_point) <= delta:
-                overlapping = True
-                break
-        
-        if not overlapping:
-            anchor_points.append(score_data[threshold]["avg_r"])
-            nms_result[threshold] = score_data[threshold]
+        self.polar_grad = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_dir_grad.npy"))
 
-    return nms_result
-
-def get_nms_threshold(config, score_data):
-    delta = config["nms_threshold_delta"]
-
-    anchor_points = []
-    nms_result = {}
-
-    for threshold in score_data:
-        if len(anchor_points) == 0:
-            anchor_points.append(threshold)
-            nms_result[threshold] = score_data[threshold]
-            continue
-
-        overlapping = False
-        for anchor_point in anchor_points:
-            if abs(float(threshold) - float(anchor_point)) <= delta:
-                overlapping = True
-                break
-
-        if not overlapping:
-            anchor_points.append(threshold)
-            nms_result[threshold] = score_data[threshold]
-
-    return nms_result
-
-def get_nms_result(config, score_data, nms_type, output_dir):
-    if nms_type == "radius":
-        nms_result = get_nms_radius(config=config, score_data=score_data)
-    elif nms_type == "threshold":
-        nms_result = get_nms_threshold(config=config, score_data=score_data)
-    elif nms_type == "no_nms":
-        nms_result = score_data
-    else:
-        nms_result = None
-
-    for threshold in nms_result.keys():
-        curr_result = nms_result[threshold]
-        curr_result["valid"] = ((curr_result["area_ratio"] > config["area_ratio_lower_threshold"])
-                                & (curr_result["area_ratio"] < config["area_ratio_upper_threshold"]))
-
-    if nms_result:
-        with open(os.path.join(output_dir, "nms_result.json"), 'w') as f:
-            json.dump(nms_result, f, indent=2)
-    
-    return nms_result
+        self.ventricle_mask = np.load(os.path.join(input_dir, "preprocessing", "np", "ventricle.npy"))
+        self.polar_ventricle_b = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
 
 class ValleyData:
     def __init__(self, polar_grad: np.ndarray):
@@ -124,52 +63,132 @@ class ValleyData:
         
         return (assigned_valleys, assigned_valley_positions)
 
-def dummy_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
-                  polar_grad: np.ndarray, polar_ventricle_b: np.ndarray):
-    best_threshold = None
-    best_score = -np.inf
+def _get_validity(config, threshold_area, ventricle_area):
+    area_ratio = threshold_area / ventricle_area
 
-    for threshold in nms_result.keys():
-        threshold_dir = os.path.join(thresholds_dir, threshold)
-        polar_threshold_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
-        r_indices = polar_threshold_b[:, 0].astype(int)
-        theta_indices = polar_threshold_b[:, 1].astype(int)
+    valid = ((area_ratio > config["area_ratio_lower_threshold"])
+             * (area_ratio < config["area_ratio_upper_threshold"]))
+    
+    return valid
 
-        lung_data = data_dict["lung_data"]
-        starts = lung_data["starts"]
-        ends = lung_data["ends"]
+def _calculate_valley_score(config,
+                            polar_grad, polar_threshold_b, polar_ventricle_b,
+                            valley_data: ValleyData,
+                            starts: list[int], ends: list[int],
+                            threshold: str):
+    r_indices = polar_threshold_b[:, 0].astype(int)
+    theta_indices = polar_threshold_b[:, 1].astype(int)
 
-        valid_mask = (
-            ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
-            ) & (r_indices != -1)
-        r_indices = r_indices[valid_mask]
-        theta_indices = theta_indices[valid_mask]
+    t_valley_data = valley_data.get_valley_data(boundary_points=polar_threshold_b)
+    (t_assigned_valleys, t_assigned_valley_positions) = t_valley_data
 
-        total = np.abs(polar_grad[r_indices, theta_indices]).sum()
+    v_valley_data = valley_data.get_valley_data(boundary_points=polar_ventricle_b)
+    (v_assigned_valleys, _) = v_valley_data
 
-        # assigned_valleys_t = _get_valley_indices(
-        #     polar_grad=polar_grad,
-        #     boundary_points=polar_threshold_b)
-        # assigned_valleys_v = _get_valley_indices(
-        #     polar_grad=polar_grad,
-        #     boundary_points=polar_ventricle_b
-        # )
+    # valid_mask = (
+    #     ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
+    # ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
 
-        # if np.any(assigned_valleys_t == assigned_valleys_v):
-        #     print(f"Skipping {threshold}.")
-        #     continue
+    ventricle_r_indices = polar_ventricle_b[:, 0].astype(int)
+    ventricle_theta_indices = polar_ventricle_b[:, 1].astype(int)
+    ventricle_values = polar_grad[ventricle_r_indices, ventricle_theta_indices]
 
-        print(f"\t{threshold}: {total}")
-        nms_result[threshold]["total_depth"] = float(total)
+    valid_mask = ((r_indices > 0) & 
+                  ((t_assigned_valleys != v_assigned_valleys) | (ventricle_values > 0)))
 
-        if total > best_score:
-            best_score = total
-            best_threshold = threshold
+    r_valid = r_indices[valid_mask]
+    theta_valid = theta_indices[valid_mask]
+    valley_r_valid = t_assigned_valley_positions[valid_mask]
 
-    return best_threshold, nms_result
+    weights = np.array([abs(polar_grad[int(rv), theta])
+                        for rv, theta in zip(valley_r_valid, theta_valid)])
+    distances = (r_valid - valley_r_valid)**2
 
-def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
-                     polar_grad: np.ndarray, polar_ventricle_b: np.ndarray):
+    weights_sum = np.sum(weights)
+    score = np.sum(weights * distances) / weights_sum if weights_sum > 0 else np.inf
+
+    valid_indices = np.where(valid_mask)[0]
+
+    score_data = {
+        "length": len(valid_indices),
+        "mean_valley": float(t_assigned_valleys.mean()),
+        "var_valley": float(t_assigned_valleys.var()),
+        "weights_sum": float(weights_sum) if weights_sum > 0 else np.inf,
+        "bp_data": "No detailed bp/valley data."
+    }
+
+    if config["include_detailed_valley_data"]:
+        score_data["bp_data"] = [
+                (int(index), float(weight), float(distance))
+                for index, weight, distance in zip(valid_indices, weights, distances) 
+        ]
+        
+    return score, score_data
+
+def _get_mean_radial_difference(polar_threshold_b: np.ndarray,
+                                starts: list[int], ends: list[int]):
+    radial_difference = []
+
+    for i in range(len(polar_threshold_b) - 1):
+        in_relevant_region = False
+        for start, end in zip(starts, ends):
+            if i >= start and i <= end:
+                in_relevant_region = True
+        
+        if not in_relevant_region:
+            continue
+
+        r1 = polar_threshold_b[i][0]
+        r2 = polar_threshold_b[i+1][0]
+
+        radial_difference.append(abs(r2-r1))
+    
+    return np.array(radial_difference).mean()
+
+def _normalize_results(result_dict):
+    valley_scores = []
+    mrd_scores = []
+
+    for _, v in result_dict.items():
+        if not v["valid"]:
+            continue
+
+        valley_scores.append(v["score_components"]["valley_score"])
+        mrd_scores.append(v["score_components"]["mean_radial_difference"])
+    
+    mean_valley = np.array(valley_scores).mean()
+    var_valley = np.array(valley_scores).std()
+
+    mean_mrd = np.array(mrd_scores).mean()
+    var_mrd = np.array(mrd_scores).std()
+
+    new_dict = {}
+
+    for k, v in result_dict.items():
+        valley_score = v["score_components"]["valley_score"]
+        mrd_score = v["score_components"]["mean_radial_difference"]
+
+        norm_valley = (valley_score - mean_valley) / var_valley
+        norm_mrd = (mrd_score - mean_mrd) / var_mrd
+
+        new_dict[k] = {
+            "valid": v["valid"],
+            "total_score": float(norm_valley + norm_mrd),
+            "score_components": {
+                "valley_score": 2.0 * float(norm_valley),
+                "mean_radial_difference": float(norm_mrd)
+            },
+            "valley_score_data": v["valley_score_data"]
+        }
+
+    return new_dict
+
+def _approximate_best_threshold(config, ventricle_mask,
+                                polar_grad, polar_ventricle_b,
+                                thresholds_dir: str, data_dict: dict):
+    
+    result_dict = {}
+
     best_threshold = None
     best_score = np.inf
 
@@ -179,40 +198,66 @@ def distance_decider(nms_result: dict, data_dict: dict, thresholds_dir: str,
 
     valley_data = ValleyData(polar_grad=polar_grad)
 
-    for threshold in nms_result.keys():
+    thresholds = os.listdir(thresholds_dir)
+
+    ventricle_area = np.sum(ventricle_mask == 1)
+
+    for threshold in thresholds:
         threshold_dir = os.path.join(thresholds_dir, threshold)
+        threshold_mask = np.load(os.path.join(threshold_dir, "mask.npy"))
+        threshold_area = np.sum(threshold_mask == 1)
+
+        valid = _get_validity(config=config,
+                              threshold_area=threshold_area,
+                              ventricle_area=ventricle_area)
+
         polar_threshold_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
-        r_indices = polar_threshold_b[:, 0].astype(int)
-        theta_indices = polar_threshold_b[:, 1].astype(int)
 
-        t_valley_data = valley_data.get_valley_data(boundary_points=polar_threshold_b)
-        (t_assigned_valleys, t_assigned_valley_positions) = t_valley_data
+        valley_score, valley_score_data = _calculate_valley_score(
+            config=config,
+            polar_grad=polar_grad,
+            polar_threshold_b=polar_threshold_b,
+            polar_ventricle_b=polar_ventricle_b,
+            valley_data=valley_data,
+            starts=starts,
+            ends=ends,
+            threshold=threshold
+        )
 
-        v_valley_data = valley_data.get_valley_data(boundary_points=polar_ventricle_b)
-        (v_assigned_valleys, _) = v_valley_data
-        
-        valid_mask = (
-            ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
-        ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
+        mean_radial_difference = _get_mean_radial_difference(
+            polar_threshold_b=polar_threshold_b,
+            starts=starts,
+            ends=ends
+        )
 
-        r_valid = r_indices[valid_mask]
-        theta_valid = theta_indices[valid_mask]
-        valley_r_valid = t_assigned_valley_positions[valid_mask]
-
-        weights = np.array([abs(polar_grad[int(rv), theta])
-                            for rv, theta in zip(valley_r_valid, theta_valid)])
-        distances = (r_valid - valley_r_valid)**2
-
-        weights_sum = np.sum(weights)
-        score = np.sum(weights * distances) / weights_sum if weights_sum > 0 else np.inf
-        nms_result[threshold]["distance_decider_score"] = float(score)
-        
-        valid = nms_result[threshold]["valid"]
+        score = valley_score + mean_radial_difference
         if score < best_score and valid:
             best_score = score
             best_threshold = threshold
 
-    return best_threshold, nms_result
+        if valid:
+            result_dict[threshold] = {
+                "total_score": float(score),
+                "score_components": {
+                    "valley_score": float(valley_score),
+                    "mean_radial_difference": float(mean_radial_difference)
+                },
+                "valley_score_data": valley_score_data
+            }
+
+    # NOTE: minmax norm probably won't be good
+    # result_dict = _normalize_results(result_dict)
+
+    result_dict = dict(
+        sorted(result_dict.items(), key=lambda item: item[1]["total_score"])
+    )
+
+    best_threshold = None
+    for threshold, data in result_dict.items():
+        best_threshold = threshold
+        break
+
+    return best_threshold, result_dict
 
 def get_3d_mask(ct, ventricle_mask, best_threshold):
     assert ct.shape == ventricle_mask.shape and len(ct.shape) == 3
@@ -223,53 +268,27 @@ def get_3d_mask(ct, ventricle_mask, best_threshold):
     mask[ct > best_threshold] = 1
     mask[ventricle_mask == 0] = 0
 
-    # # experimental dilation
-    # mask = ndimage.binary_dilation(mask, ball(2))
-
     return mask
-
-class InputObject:
-    def __init__(self, input_dir):
-        with open(os.path.join(input_dir, "thresholds", "score_data.json"), 'r') as f:
-            self.score_data = json.load(f)
-
-        with open(os.path.join(input_dir, "preprocessing", "data.json"), 'r') as f:
-            self.data_dict = json.load(f)
-
-        self.thresholds_dir = os.path.join(input_dir, "thresholds", "np")
-
-        self.polar_grad = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_dir_grad.npy"))
-
-        self.polar_ventricle_b = np.load(os.path.join(input_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
 
 def _get_input(input_dir) -> InputObject:
     return InputObject(input_dir=input_dir)
 
-def postprocess(config, output_dir):
-
-    input_object = _get_input(output_dir)
+def calculate_approximation(config, output_dir):
+    input_object = _get_input(input_dir=output_dir)
 
     output_dir = os.path.join(output_dir, "postprocessing")
     os.makedirs(output_dir, exist_ok=True)
 
-    nms_result = get_nms_result(config=config,
-                                score_data=input_object.score_data,
-                                nms_type=config["nms_type"],
-                                output_dir=output_dir)
-    
-    if not nms_result:
-        print(f"nms_type: {config['nms_type']} is invalid.")
-        return
-    
-    best_threshold, nms_result = distance_decider(
-        nms_result=nms_result,
-        data_dict=input_object.data_dict,
-        thresholds_dir=input_object.thresholds_dir,
+    best_threshold, result_dict = _approximate_best_threshold(
+        config=config,
+        ventricle_mask=input_object.ventricle_mask,
         polar_grad=input_object.polar_grad,
-        polar_ventricle_b=input_object.polar_ventricle_b
+        polar_ventricle_b=input_object.polar_ventricle_b,
+        thresholds_dir=input_object.thresholds_dir,
+        data_dict=input_object.data_dict
     )
 
-    with open(os.path.join(output_dir, "nms_result.json"), 'w') as f:
-        json.dump(nms_result, f, indent=2)
+    with open(os.path.join(output_dir, "results.json"), 'w') as f:
+        json.dump(result_dict, f, indent=2)
 
     return best_threshold

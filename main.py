@@ -11,7 +11,6 @@ import utils
 import preprocessor
 import thresholds
 import postprocessor
-import new_method
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -142,9 +141,6 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
 def _save_result_json(output_dir, best_threshold, mask_metrics):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
-
-    # with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
-    #     thresholds_json = json.load(f)
     
     ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
     ventricle_area = np.sum(ventricle == 1)
@@ -173,7 +169,6 @@ def _save_result_json(output_dir, best_threshold, mask_metrics):
     result_json = {
         "output_data": output_data,
         "preprocessing": preproc_json,
-        # "thresholds": thresholds_json,
         "postprocessing": postproc_json
     }
 
@@ -218,7 +213,6 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     
     lung = utils.scan_to_np_array(patient_data["lung_mask_path"])
 
-
     polar_converter = preprocessor.preprocess(
         config=config['preprocessing'],
         ct=ct,
@@ -241,13 +235,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         polar_converter=polar_converter
     )
     print("Thresholding finished successfully!")
-    
-    # best_threshold = postprocessor.postprocess(
-    #     config=config["postprocessing"],
-    #     output_dir=output_dir
-    # )
 
-    best_threshold = new_method.calculate_approximation(
+    best_threshold = postprocessor.calculate_approximation(
         config=config["postprocessing"],
         output_dir=output_dir
     )
@@ -293,8 +282,6 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
             "base_mask": base_mask_metrics,
             "reconstructed_mask": reconstr_mask_metrics
         }
-
-
 
     print("Postprocessing finished successfully!")
 
