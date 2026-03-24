@@ -64,13 +64,15 @@ class ValleyData:
         return (assigned_valleys, assigned_valley_positions)
 
 class PostProcessor():
-    def __init__(self, config, output_dir):
+    def __init__(self, config, output_dir, spacing):
         self.input_object = InputObject(input_dir=output_dir)
         self.config = config
 
         output_dir = os.path.join(output_dir, "postprocessing")
         os.makedirs(output_dir, exist_ok=True)
         self.output_dir = output_dir
+
+        self.spacing = spacing
     
     def _get_validity(self, threshold_area, ventricle_area):
         area_ratio = threshold_area / ventricle_area
@@ -79,6 +81,29 @@ class PostProcessor():
                 * (area_ratio < self.config["area_ratio_upper_threshold"]))
         
         return valid
+
+    def _compute_distance_physical(self, r1s, r2s, thetas):
+        x_spacing = self.spacing[2]
+        y_spacing = self.spacing[1]
+
+        r1_xs = r1s * np.cos(thetas)
+        r1_xs_mm = r1_xs * x_spacing
+        r1_ys = r1s * np.sin(thetas)
+        r1_ys_mm = r1_ys * y_spacing
+
+        r2_xs = r2s * np.cos(thetas)
+        r2_xs_mm = r2_xs * x_spacing
+        r2_ys = r2s * np.sin(thetas)
+        r2_ys_mm = r2_ys * y_spacing
+
+        r1s_mm = np.stack((r1_xs_mm, r1_ys_mm), axis=-1)
+        r2s_mm = np.stack((r2_xs_mm, r2_ys_mm), axis=-1)
+
+        diffs_mm = r1s_mm - r2s_mm
+
+        dist_mm = np.linalg.norm(diffs_mm, axis=1)
+
+        return dist_mm**2
 
     def _calculate_valley_score(self,
                                 polar_threshold_b,
@@ -111,7 +136,15 @@ class PostProcessor():
 
         weights = np.array([abs(self.input_object.polar_grad[int(rv), theta])
                             for rv, theta in zip(valley_r_valid, theta_valid)])
-        distances = (r_valid - valley_r_valid)**2
+        
+        if self.config["use_physical_units"]:
+            distances = self._compute_distance_physical(
+                r1s=r_valid,
+                r2s=valley_r_valid,
+                thetas=theta_valid
+            )
+        else:
+            distances = (r_valid - valley_r_valid)**2
 
         weights_sum = np.sum(weights)
         score = np.sum(weights * distances) / weights_sum if weights_sum > 0 else np.inf
@@ -137,23 +170,32 @@ class PostProcessor():
     def _get_mean_radial_difference(self,
                                     polar_threshold_b: np.ndarray,
                                     starts: list[int], ends: list[int]):
-        radial_difference = []
+        radial_differences = []
 
-        for i in range(len(polar_threshold_b) - 1):
+        for theta in range(len(polar_threshold_b) - 1):
             in_relevant_region = False
             for start, end in zip(starts, ends):
-                if i >= start and i <= end:
+                if theta >= start and theta <= end:
                     in_relevant_region = True
             
             if not in_relevant_region:
                 continue
 
-            r1 = polar_threshold_b[i][0]
-            r2 = polar_threshold_b[i+1][0]
+            r1 = polar_threshold_b[theta][0]
+            r2 = polar_threshold_b[theta+1][0]
 
-            radial_difference.append(abs(r2-r1))
+            if self.config["use_physical_units"]:
+                radial_difference = self._compute_distance_physical(
+                    r1s=np.array([r1]),
+                    r2s=np.array([r2]),
+                    thetas=np.array([theta])
+                )
+            else:
+                radial_difference = abs(r2-r1)
+
+            radial_differences.append(radial_difference)
         
-        return np.array(radial_difference).mean()
+        return np.array(radial_differences).mean()
 
     def _normalize_results(result_dict):
         valley_scores = []

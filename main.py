@@ -238,7 +238,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
 
     postprocessor = PostProcessor(
         config=config["postprocessing"],
-        output_dir=output_dir
+        output_dir=output_dir,
+        spacing=spacing
     )
 
     best_threshold = postprocessor.calculate_approximation()
