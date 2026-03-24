@@ -11,6 +11,7 @@ import utils
 import preprocessor
 import thresholds
 import postprocessor
+import new_method
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,6 +32,8 @@ def _save_result_plots(output_dir, threshold):
         polar_doc_mask_b = np.load(polar_doc_mask_b_path)
     else:
         polar_doc_mask_b = None
+
+    nnunet_polar_mask_b = np.load(os.path.join(output_dir, "preprocessing", "np", "polar_ventricle_boundary.npy"))
 
     threshold_dir = os.path.join(output_dir, "thresholds", "np", str(threshold))
     approx_mask_b = np.load(os.path.join(threshold_dir, "mask_boundary.npy"))
@@ -96,6 +99,15 @@ def _save_result_plots(output_dir, threshold):
             label='Doc/GT'
         )
     plt.scatter(
+        nnunet_polar_mask_b[:, 1],
+        nnunet_polar_mask_b[:, 0],
+        s=1,
+        marker='o',
+        c='blue',
+        alpha=0.3,
+        label='NNUnet'
+    )
+    plt.scatter(
         approx_polar_mask_b[:, 1],
         approx_polar_mask_b[:, 0],
         s=1,
@@ -127,17 +139,17 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
     sitk.WriteImage(mask_sitk, output_path)
 
 
-def _save_result_json(output_dir, best_threshold):
+def _save_result_json(output_dir, best_threshold, mask_metrics):
     with open(os.path.join(output_dir, "preprocessing", "data.json"), 'r') as f:
         preproc_json = json.load(f)
 
-    with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
-        thresholds_json = json.load(f)
+    # with open(os.path.join(output_dir, "thresholds", "score_data.json"), 'r') as f:
+    #     thresholds_json = json.load(f)
     
     ventricle = np.load(os.path.join(output_dir, "preprocessing", "np", "ventricle.npy"))
     ventricle_area = np.sum(ventricle == 1)
 
-    with open(os.path.join(output_dir, "postprocessing", "nms_result.json"), 'r') as f:
+    with open(os.path.join(output_dir, "postprocessing", "results.json"), 'r') as f:
         postproc_json = json.load(f)
     
     
@@ -154,13 +166,14 @@ def _save_result_json(output_dir, best_threshold):
 
     output_data = {
         "best_threshold": float(best_threshold),
-        "area_data": area_data
+        "area_data": area_data,
+        "mask_metrics": mask_metrics
     }
 
     result_json = {
         "output_data": output_data,
         "preprocessing": preproc_json,
-        "thresholds": thresholds_json,
+        # "thresholds": thresholds_json,
         "postprocessing": postproc_json
     }
 
@@ -229,13 +242,19 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
     )
     print("Thresholding finished successfully!")
     
-    best_threshold = postprocessor.postprocess(
+    # best_threshold = postprocessor.postprocess(
+    #     config=config["postprocessing"],
+    #     output_dir=output_dir
+    # )
+
+    best_threshold = new_method.calculate_approximation(
         config=config["postprocessing"],
         output_dir=output_dir
     )
 
+    mask_metrics = {}
     if config["postprocessing"]["save_3d_mask"]:
-        mask_3d = postprocessor.save_3d_mask(
+        mask_3d = postprocessor.get_3d_mask(
             ct=ct,
             ventricle_mask=ventricle,
             best_threshold=best_threshold
@@ -246,6 +265,34 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
             reference_image=nnunet_mask_sitk,
             output_path=os.path.join(output_dir, "mask.nii.gz")
         )
+
+        print("Starting algorithm")
+        reconstr_mask = utils.remove_segmentation_leakage(
+            arc_mask=mask_3d,
+            pixel_spacing=spacing
+        )
+        reconstr_mask = reconstr_mask.astype(np.uint8)
+
+        _save_mask_with_reference(
+            mask_3d=reconstr_mask,
+            reference_image=nnunet_mask_sitk,
+            output_path=os.path.join(output_dir, "mask_reconstr.nii.gz")
+        )
+
+        base_mask_metrics = utils.calculate_mask_metrics(
+            prediction=mask_3d,
+            ground_truth=doc_mask
+        )
+
+        reconstr_mask_metrics = utils.calculate_mask_metrics(
+            prediction=reconstr_mask,
+            ground_truth=doc_mask
+        )
+
+        mask_metrics = {
+            "base_mask": base_mask_metrics,
+            "reconstructed_mask": reconstr_mask_metrics
+        }
 
 
 
@@ -258,7 +305,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
 
     _save_result_json(
         output_dir=output_dir,
-        best_threshold=best_threshold
+        best_threshold=best_threshold,
+        mask_metrics=mask_metrics
     )
 
     if config["cleanup"]:

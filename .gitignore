@@ -208,6 +208,7 @@ __marimo__/
 
 # Project
 *output*/
+*test*/
 patients_data.json
 config.yaml
 patients_to_process.txt
