@@ -63,9 +63,6 @@ class ValleyData:
         
         return (assigned_valleys, assigned_valley_positions)
 
-def _get_input(input_dir) -> InputObject:
-    return InputObject(input_dir=input_dir)
-
 class PostProcessor():
     def __init__(self, config, output_dir):
         self.input_object = InputObject(input_dir=output_dir)
@@ -73,17 +70,18 @@ class PostProcessor():
 
         output_dir = os.path.join(output_dir, "postprocessing")
         os.makedirs(output_dir, exist_ok=True)
+        self.output_dir = output_dir
     
-    def _get_validity(self, config, threshold_area, ventricle_area):
+    def _get_validity(self, threshold_area, ventricle_area):
         area_ratio = threshold_area / ventricle_area
 
-        valid = ((area_ratio > config["area_ratio_lower_threshold"])
-                * (area_ratio < config["area_ratio_upper_threshold"]))
+        valid = ((area_ratio > self.config["area_ratio_lower_threshold"])
+                * (area_ratio < self.config["area_ratio_upper_threshold"]))
         
         return valid
 
     def _calculate_valley_score(self,
-                                polar_grad, polar_threshold_b, polar_ventricle_b,
+                                polar_threshold_b,
                                 valley_data: ValleyData,
                                 starts: list[int], ends: list[int],
                                 threshold: str):
@@ -93,16 +91,16 @@ class PostProcessor():
         t_valley_data = valley_data.get_valley_data(boundary_points=polar_threshold_b)
         (t_assigned_valleys, t_assigned_valley_positions) = t_valley_data
 
-        v_valley_data = valley_data.get_valley_data(boundary_points=polar_ventricle_b)
+        v_valley_data = valley_data.get_valley_data(boundary_points=self.input_object.polar_ventricle_b)
         (v_assigned_valleys, _) = v_valley_data
 
         # valid_mask = (
         #     ~((theta_indices >= ends[0]) & (theta_indices <= starts[1]))
         # ) & (r_indices != -1) & (t_assigned_valleys != v_assigned_valleys)
 
-        ventricle_r_indices = polar_ventricle_b[:, 0].astype(int)
-        ventricle_theta_indices = polar_ventricle_b[:, 1].astype(int)
-        ventricle_values = polar_grad[ventricle_r_indices, ventricle_theta_indices]
+        ventricle_r_indices = self.input_object.polar_ventricle_b[:, 0].astype(int)
+        ventricle_theta_indices = self.input_object.polar_ventricle_b[:, 1].astype(int)
+        ventricle_values = self.input_object.polar_grad[ventricle_r_indices, ventricle_theta_indices]
 
         valid_mask = ((r_indices > 0) & 
                     ((t_assigned_valleys != v_assigned_valleys) | (ventricle_values > 0)))
@@ -111,7 +109,7 @@ class PostProcessor():
         theta_valid = theta_indices[valid_mask]
         valley_r_valid = t_assigned_valley_positions[valid_mask]
 
-        weights = np.array([abs(polar_grad[int(rv), theta])
+        weights = np.array([abs(self.input_object.polar_grad[int(rv), theta])
                             for rv, theta in zip(valley_r_valid, theta_valid)])
         distances = (r_valid - valley_r_valid)**2
 
@@ -195,41 +193,35 @@ class PostProcessor():
 
         return new_dict
 
-    def _approximate_best_threshold(self, config,
-                                    ventricle_mask,
-                                    polar_grad, polar_ventricle_b,
-                                    thresholds_dir: str, data_dict: dict):
+    def _approximate_best_threshold(self):
         
         result_dict = {}
 
         best_threshold = None
         best_score = np.inf
 
-        lung_data = data_dict["lung_data"]
+        lung_data = self.input_object.data_dict["lung_data"]
         starts = lung_data["starts"]
         ends = lung_data["ends"]
 
-        valley_data = ValleyData(polar_grad=polar_grad)
+        valley_data = ValleyData(polar_grad=self.input_object.polar_grad)
 
-        thresholds = os.listdir(thresholds_dir)
+        thresholds = os.listdir(self.input_object.thresholds_dir)
 
-        ventricle_area = np.sum(ventricle_mask == 1)
+        ventricle_area = np.sum(self.input_object.ventricle_mask == 1)
 
         for threshold in thresholds:
-            threshold_dir = os.path.join(thresholds_dir, threshold)
+            threshold_dir = os.path.join(self.input_object.thresholds_dir, threshold)
             threshold_mask = np.load(os.path.join(threshold_dir, "mask.npy"))
             threshold_area = np.sum(threshold_mask == 1)
 
-            valid = self._get_validity(config=config,
-                                threshold_area=threshold_area,
-                                ventricle_area=ventricle_area)
+            valid = self._get_validity(threshold_area=threshold_area,
+                                       ventricle_area=ventricle_area)
 
             polar_threshold_b = np.load(os.path.join(threshold_dir, "polar_mask_boundary.npy"))
 
             valley_score, valley_score_data = self._calculate_valley_score(
-                polar_grad=polar_grad,
                 polar_threshold_b=polar_threshold_b,
-                polar_ventricle_b=polar_ventricle_b,
                 valley_data=valley_data,
                 starts=starts,
                 ends=ends,
@@ -265,39 +257,27 @@ class PostProcessor():
         )
 
         best_threshold = None
-        for threshold, data in result_dict.items():
+        for threshold in result_dict.keys():
             best_threshold = threshold
             break
 
         return best_threshold, result_dict
 
-    def get_3d_mask(self, ct, ventricle_mask, best_threshold):
-        assert ct.shape == ventricle_mask.shape and len(ct.shape) == 3
+    def get_3d_mask(self, ct, best_threshold):
+        assert ct.shape == self.input_object.ventricle_mask.shape and len(ct.shape) == 3
 
         best_threshold = float(best_threshold)
 
         mask = np.zeros_like(ct)
         mask[ct > best_threshold] = 1
-        mask[ventricle_mask == 0] = 0
+        mask[self.input_object.ventricle_mask == 0] = 0
 
         return mask
 
-    def calculate_approximation(self, config, output_dir):
-        input_object = _get_input(input_dir=output_dir)
+    def calculate_approximation(self):
+        best_threshold, result_dict = self._approximate_best_threshold()
 
-        output_dir = os.path.join(output_dir, "postprocessing")
-        os.makedirs(output_dir, exist_ok=True)
-
-        best_threshold, result_dict = self._approximate_best_threshold(
-            config=config,
-            ventricle_mask=input_object.ventricle_mask,
-            polar_grad=input_object.polar_grad,
-            polar_ventricle_b=input_object.polar_ventricle_b,
-            thresholds_dir=input_object.thresholds_dir,
-            data_dict=input_object.data_dict
-        )
-
-        with open(os.path.join(output_dir, "results.json"), 'w') as f:
+        with open(os.path.join(self.output_dir, "results.json"), 'w') as f:
             json.dump(result_dict, f, indent=2)
 
         return best_threshold

@@ -241,10 +241,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
         output_dir=output_dir
     )
 
-    best_threshold = postprocessor.calculate_approximation(
-        config=config["postprocessing"],
-        output_dir=output_dir
-    )
+    best_threshold = postprocessor.calculate_approximation()
 
     mask_metrics = {}
     if config["postprocessing"]["save_3d_mask"]:
