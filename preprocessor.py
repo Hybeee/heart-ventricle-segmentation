@@ -233,6 +233,7 @@ def preprocess(config: dict,
 
     _save_np(output_dir_np, ct, "ct")
     _save_np(output_dir_np, ventricle, "ventricle")
+    _save_np(output_dir_np, ventricle_boundary, "ventricle_boundary")
     _save_np(output_dir_np, polar_dir_grad, "polar_dir_grad")
     _save_np(output_dir_np, polar_ventricle, "polar_ventricle")
     _save_np(output_dir_np, polar_ventricle_boundary, "polar_ventricle_boundary")

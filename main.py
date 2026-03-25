@@ -172,7 +172,7 @@ def _save_result_json(output_dir, best_threshold, mask_metrics):
         "postprocessing": postproc_json
     }
 
-    with open(os.path.join(output_dir, "result.json"), 'w') as f:
+    with open(os.path.join(output_dir, "results.json"), 'w') as f:
         json.dump(result_json, f, indent=3)
 
 def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
