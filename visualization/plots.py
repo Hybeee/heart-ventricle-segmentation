@@ -129,6 +129,7 @@ class Viewer:
     def __init__(self, view_data: ViewData):
         self.view_data = view_data
 
+        # checkbutton states
         self.show_gt = True
         self.show_nnunet = True
         self.show_threshold = True
@@ -192,6 +193,12 @@ class Viewer:
     
     def render(self):
         fig, ax = self.fig, self.ax
+
+        is_already_rendered = len(ax.images) > 0
+        if is_already_rendered:
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+
         ax.clear()
 
         mode = self.view_data.mode
@@ -236,7 +243,11 @@ class Viewer:
                 view_data=self.view_data,
                 index=self.current_threshold_index
             )
-        
+
+        if is_already_rendered:
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+
         ax.set_title(f"Threshold: {self.threshold_info}")
         ax.legend()
         fig.canvas.draw_idle()
