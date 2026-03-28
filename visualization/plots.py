@@ -1,32 +1,55 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+import numpy as np
 
 class VentricleData():
     def __init__(self, 
                  mask, boundary,
-                 polar_mask, polar_boundary):
+                 polar_mask, polar_boundary,
+                 center=None):
         self.mask = mask
         self.boundary = boundary
 
         self.polar_mask = polar_mask
         self.polar_boundary = polar_boundary
+        
+        self.center = center
+        self.transformed_boundary = self._transform_boundary()
     
     def get_data(self, mode: str):
         mode = mode.lower()
 
         if mode == "cartesian":
             return self.mask, self.boundary
+        elif mode == "cartesian_transformed":
+            return self.mask, self.transformed_boundary
         elif mode == "polar":
             return self.polar_mask, self.polar_boundary
         else:
             raise ValueError(f"Unknown mode: {mode}")
+        
+    def _transform_boundary(self):
+        rs = self.polar_boundary[:, 0]
+        thetas = self.polar_boundary[:, 1]
+        cx, cy = self.center[1], self.center[0]
+
+        thetas = np.deg2rad(thetas)
+
+        xs = rs * np.cos(thetas) + cx
+        ys = rs * np.sin(thetas) + cy
+
+        transformed_boundary = np.stack((ys, xs), axis=-1)
+
+        return np.array(transformed_boundary)
 
 class ThresholdsData():
     def __init__(self, thresholds,
                  masks, boundaries,
-                 polar_masks, polar_boundaries):
+                 polar_masks, polar_boundaries,
+                 center=None):
         self.thresholds = thresholds
         thresholds_data: dict[str, VentricleData] = {}
+        self.center = center
 
         for threshold, mask, boundary, polar_mask, polar_boundary in zip(
             thresholds, masks, boundaries, polar_masks, polar_boundaries
@@ -35,7 +58,8 @@ class ThresholdsData():
                 mask=mask,
                 boundary=boundary,
                 polar_mask=polar_mask,
-                polar_boundary=polar_boundary
+                polar_boundary=polar_boundary,
+                center=self.center
             )
         
         self.thresholds_data = thresholds_data
@@ -55,6 +79,13 @@ class ViewData():
         self.thresholds_data = thresholds_data
 
         self.alg_results = alg_results
+        center = alg_results["preprocessing"]["center"]
+        center = np.array(center)
+        print(f"Center: {center}")
+
+        self.gt_data.center = center
+        self.nnunet_data.center = center
+        self.thresholds_data.center = center
 
         self.mode = mode
         self.cmap = cmap
@@ -63,6 +94,8 @@ class ViewData():
         mode = mode.lower()
 
         if mode == "cartesian":
+            return self.ct
+        elif mode == "cartesian_transformed":
             return self.ct
         elif mode == "polar":
             return self.polar_grad

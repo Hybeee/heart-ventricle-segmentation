@@ -9,7 +9,7 @@ import visualization.plots as plots
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def _load_thresholds_data(thresholds_dir: str, alg_results: dict) -> ThresholdsData:
+def _load_thresholds_data(thresholds_dir: str, alg_results: dict, center) -> ThresholdsData:
     thresholds = []
     masks = []
     boundaries = []
@@ -34,7 +34,8 @@ def _load_thresholds_data(thresholds_dir: str, alg_results: dict) -> ThresholdsD
         masks=masks,
         boundaries=boundaries,
         polar_masks=polar_masks,
-        polar_boundaries=polar_boundaries
+        polar_boundaries=polar_boundaries,
+        center=center
     )
 
     return thresholds_data
@@ -90,10 +91,11 @@ def _load_data(input_dir: str) -> ViewData:
     preproc_dir = os.path.join(input_dir, "preprocessing", "np")
     thresholds_dir = os.path.join(input_dir, "thresholds", "np")
 
-    # np.load(os.path.join())
-
     ct = np.load(os.path.join(preproc_dir, "ct.npy"))
     polar_grad = np.load(os.path.join(preproc_dir, "polar_dir_grad.npy"))
+
+    alg_results = _load_alg_results(input_dir)
+    center = np.array(alg_results["preprocessing"]["center"])
 
     doc_mask = np.load(os.path.join(preproc_dir, "doc_mask.npy"))
     doc_mask_boundary = np.load(os.path.join(preproc_dir, "doc_mask_boundary.npy"))
@@ -103,7 +105,8 @@ def _load_data(input_dir: str) -> ViewData:
         mask=doc_mask,
         boundary=doc_mask_boundary,
         polar_mask=polar_doc_mask,
-        polar_boundary=polar_doc_mask_boundary
+        polar_boundary=polar_doc_mask_boundary,
+        center=center
     )
 
     ventricle = np.load(os.path.join(preproc_dir, "ventricle.npy"))
@@ -114,14 +117,14 @@ def _load_data(input_dir: str) -> ViewData:
         mask=ventricle,
         boundary=ventricle_boundary,
         polar_mask=polar_ventricle,
-        polar_boundary=polar_ventricle_boundary
+        polar_boundary=polar_ventricle_boundary,
+        center=center
     )
-
-    alg_results = _load_alg_results(input_dir)
 
     thresholds_data = _load_thresholds_data(
         thresholds_dir=thresholds_dir,
-        alg_results=alg_results
+        alg_results=alg_results,
+        center=center
     )
 
     view_data = ViewData(
@@ -159,7 +162,7 @@ def main():
     
     view_data = _load_data(input_dir=input_dir)
     
-    view_data.mode = "cartesian"
+    view_data.mode = "cartesian_transformed"
     view_data.cmap = "grey"
     plots.view_ct(view_data=view_data)
 
