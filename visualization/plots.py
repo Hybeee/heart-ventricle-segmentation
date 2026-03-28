@@ -108,7 +108,7 @@ def _display_normal_data(ax, mask, boundary, color, label):
         label=label
     )
 
-class Viewer:
+class Viewer2D:
     def __init__(self, view_data: ViewData):
         self.view_data = view_data
 
@@ -129,7 +129,7 @@ class Viewer:
 
         self.threshold_info = ""
         self.current_threshold_index = 0
-        self.current_theta = 0
+        self.current_theta_index = 0
     
     def _init_sliders(self):
         ax_threshold_slider = self.fig.add_axes([0.20, 0.10, 0.70, 0.03])
@@ -144,7 +144,7 @@ class Viewer:
         )
 
         self.threshold_slider.on_changed(
-            lambda val: self._on_slider_change(threshold_index=val, current_theta=self.current_theta)
+            lambda val: self._on_slider_change(threshold_index=val, current_theta_index=self.current_theta_index)
         )
 
         ax_theta_slider = self.fig.add_axes([0.20, 0.05, 0.70, 0.03])
@@ -163,7 +163,7 @@ class Viewer:
         )
 
         self.theta_slider.on_changed(
-            lambda val: self._on_slider_change(threshold_index=self.current_threshold_index, current_theta=val)
+            lambda val: self._on_slider_change(threshold_index=self.current_threshold_index, current_theta_index=val)
         )
     
     def _init_buttons(self):
@@ -213,9 +213,9 @@ class Viewer:
         self._init_sliders()
         self._init_buttons()
 
-    def _on_slider_change(self, threshold_index, current_theta):
+    def _on_slider_change(self, threshold_index, current_theta_index):
         self.current_threshold_index = threshold_index
-        self.current_theta = current_theta
+        self.current_theta_index = current_theta_index
 
         self.render()
 
@@ -249,7 +249,7 @@ class Viewer:
         colors = np.full(threshold_boundary.shape[0], 'green')
 
         if self.show_at_theta_only:
-            point = threshold_boundary[self.current_theta]
+            point = threshold_boundary[self.current_theta_index]
             color = 'green'
 
             return np.array([point]), np.array([color])
@@ -347,6 +347,181 @@ class Viewer:
         ax.set_title(f"Threshold: {self.threshold_info}")
         ax.legend()
         fig.canvas.draw_idle()
+
+    def show(self):
+        self.render()
+        plt.show()
+
+class ValleyData:
+    def __init__(self, polar_grad: np.ndarray):
+        self.fo_deriv = polar_grad
+        self.so_deriv = np.gradient(self.fo_deriv, axis=0)
+
+        self.zero_crossings = np.diff(np.signbit(self.so_deriv), axis=0)
+
+        self.valley_slope = self.so_deriv[1:, :] - self.so_deriv[:-1, :]
+        self.valley_mask = self.zero_crossings & (self.valley_slope > 0)
+        self.peak_slope = -self.so_deriv[1:, :] + self.so_deriv[:-1, :]
+        self.peak_mask = self.zero_crossings & (self.peak_slope > 0)
+
+        self.valley_positions = [np.where(self.valley_mask[:, c])[0] for c in range(polar_grad.shape[1])]
+        self.peak_positions = [np.where(self.peak_mask[:, c])[0] for c in range(polar_grad.shape[1])]
+
+    def get_valley_data(self, boundary_points: np.ndarray):
+        r_idx, theta_idx = boundary_points[:, 0], boundary_points[:, 1]
+        
+        assigned_valleys = np.full(len(r_idx), -1, dtype=int)
+        assigned_valley_positions = np.full(len(r_idx), -1, dtype=int)
+
+        for i, (r, t) in enumerate(zip(r_idx, theta_idx)):
+            valley_position = self.valley_positions[t]
+            peak_position = self.peak_positions[t]
+
+            if len(valley_position) == 0:
+                assigned_valleys[i] = -1
+                assigned_valley_positions[i] = -1
+                continue
+
+            valley_idx = np.searchsorted(valley_position, r, side='right') - 1
+            if valley_idx < 0:
+                assigned_valleys[i] = -1
+                assigned_valley_positions[i] = -1
+                continue
+            
+            next_valley = valley_position[valley_idx + 1] if (valley_idx + 1) < len(valley_position) else self.fo_deriv.shape[0]
+            peaks_between = peak_position[(peak_position > valley_position[valley_idx]) & (peak_position < next_valley)]
+
+            if len(peaks_between) > 0 and r > peaks_between[0]:
+                valley_idx += 1
+                valley_idx = min(valley_idx, len(valley_position)-1)
+            
+            assigned_valleys[i] = valley_idx
+            assigned_valley_positions[i] = self.valley_positions[t][valley_idx]
+        
+        return (assigned_valleys, assigned_valley_positions)
+
+class Viewer1D:
+    def __init__(self, view_data: ViewData):
+        self.view_data = view_data
+        self.valley_data = ValleyData(self.view_data.polar_grad)
+
+        self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
+
+        self._init_widgets()
+
+        self.title = ""
+        self.current_threshold_index = 0
+        self.current_theta_index = 0
+
+    def _init_sliders(self):
+        ax_threshold_slider = self.fig.add_axes([0.20, 0.10, 0.70, 0.03])
+
+        self.threshold_slider = Slider(
+            ax=ax_threshold_slider,
+            label='Threshold Slider',
+            valmin=0,
+            valmax=len(self.view_data.thresholds_data.thresholds) - 1,
+            valinit=0,
+            valstep=1
+        )
+
+        self.threshold_slider.on_changed(
+            lambda val: self._on_slider_change(threshold_index=val, current_theta_index=self.current_theta_index)
+        )
+
+        ax_theta_slider = self.fig.add_axes([0.20, 0.05, 0.70, 0.03])
+
+        thresholds_data = self.view_data.thresholds_data.thresholds_data
+        threshold_data = list(thresholds_data.values())[0]
+        valmax = threshold_data.polar_boundary.shape[0]
+
+        self.theta_slider = Slider(
+            ax=ax_theta_slider,
+            label='Theta Slider (Index)',
+            valmin=0,
+            valmax=valmax - 1,
+            valinit=0,
+            valstep=1
+        )
+
+        self.theta_slider.on_changed(
+            lambda val: self._on_slider_change(threshold_index=self.current_threshold_index, current_theta_index=val)
+        )
+
+    def _init_widgets(self):
+        self.fig.subplots_adjust(
+            bottom=0.35,
+            left=0.1,
+            right=0.9,
+            top=0.95
+        )
+        self._init_sliders()
+
+    def _on_slider_change(self, threshold_index, current_theta_index):
+        self.current_threshold_index = threshold_index
+        self.current_theta_index = current_theta_index
+
+        self.render()
+
+    def _display_normal_data(self, ax, grad_map_1d, point, color, label):
+        radius = point[0]
+        value = grad_map_1d[radius]
+
+        ax.scatter(
+            radius,
+            value,
+            s=20,
+            c=color,
+            marker='o',
+            label=label
+        )
+
+    def _display_threshold_data(self, ax, grad_map_1d):
+        threshold = self.view_data.thresholds_data.thresholds[self.current_threshold_index]
+        threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
+        point = threshold_data.polar_boundary[self.current_theta_index]
+
+        self._display_normal_data(ax, grad_map_1d, point, 'green', 'Approximation')
+
+    def _display_valleys(self, ax, grad_map_1d, max_r):
+        valley_locations = self.valley_data.valley_positions[self.current_theta_index]
+        valley_locations = np.array(valley_locations)
+        valley_rs = valley_locations[valley_locations < max_r]
+
+        valley_values = grad_map_1d[valley_rs]
+
+        ax.scatter(
+            valley_rs,
+            valley_values,
+            s=10,
+            c='purple',
+            marker='o',
+            label='Valley'
+        )
+
+    def render(self):
+        fig, ax = self.fig, self.ax
+
+        ax.clear()
+
+        grad_map_1d = self.view_data.polar_grad[:, self.current_theta_index]
+    
+        gt_point = self.view_data.gt_data.polar_boundary[self.current_theta_index]
+        nnunet_point = self.view_data.nnunet_data.polar_boundary[self.current_theta_index]
+        
+        max_r = min(nnunet_point[0] + 15, len(grad_map_1d)-1)
+        grad_map_1d = grad_map_1d[:max_r]
+
+        ax.plot(grad_map_1d)
+
+        self._display_normal_data(ax, grad_map_1d, gt_point, 'red', 'GT/Doc')
+        self._display_normal_data(ax, grad_map_1d, nnunet_point, 'blue', 'nnUNet')
+        self._display_threshold_data(ax, grad_map_1d)
+        self._display_valleys(ax, grad_map_1d, max_r)
+
+        ax.set_xlabel("Radii")
+        ax.set_ylabel("Gradient Value")
+        ax.set_title(self.title)
 
     def show(self):
         self.render()
