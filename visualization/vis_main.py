@@ -162,7 +162,7 @@ def main():
     
     view_data = _load_data(input_dir=input_dir)
     
-    view_data.mode = "polar"
+    view_data.mode = "cartesian_transformed"
     viewer = Viewer(view_data=view_data)
     viewer.show()
 

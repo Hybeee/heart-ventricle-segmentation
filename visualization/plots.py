@@ -116,6 +116,7 @@ class Viewer:
         self.show_gt = True
         self.show_nnunet = True
         self.show_threshold = True
+        self.show_at_theta_only = False
 
         # radiobutton states
         self.show_all = True
@@ -128,12 +129,13 @@ class Viewer:
 
         self.threshold_info = ""
         self.current_threshold_index = 0
+        self.current_theta = 0
     
     def _init_sliders(self):
-        ax_slider = self.fig.add_axes([0.15, 0.10, 0.70, 0.03])
+        ax_threshold_slider = self.fig.add_axes([0.20, 0.10, 0.70, 0.03])
 
-        self.slider = Slider(
-            ax=ax_slider,
+        self.threshold_slider = Slider(
+            ax=ax_threshold_slider,
             label='Threshold Slider',
             valmin=0,
             valmax=len(self.view_data.thresholds_data.thresholds) - 1,
@@ -141,7 +143,28 @@ class Viewer:
             valstep=1
         )
 
-        self.slider.on_changed(self._on_slider_change)
+        self.threshold_slider.on_changed(
+            lambda val: self._on_slider_change(threshold_index=val, current_theta=self.current_theta)
+        )
+
+        ax_theta_slider = self.fig.add_axes([0.20, 0.05, 0.70, 0.03])
+
+        thresholds_data = self.view_data.thresholds_data.thresholds_data
+        threshold_data = list(thresholds_data.values())[0]
+        valmax = threshold_data.polar_boundary.shape[0]
+
+        self.theta_slider = Slider(
+            ax=ax_theta_slider,
+            label='Theta Slider (Index)',
+            valmin=0,
+            valmax=valmax - 1,
+            valinit=0,
+            valstep=1
+        )
+
+        self.theta_slider.on_changed(
+            lambda val: self._on_slider_change(threshold_index=self.current_threshold_index, current_theta=val)
+        )
     
     def _init_buttons(self):
         # checkbutton
@@ -157,7 +180,7 @@ class Viewer:
         self.check_vis.on_clicked(self._on_toggle)
 
         # radiobutton
-        ax_radio_val = self.fig.add_axes([0.55, 0.15, 0.30, 0.12])
+        ax_radio_val = self.fig.add_axes([0.35, 0.15, 0.30, 0.12])
         ax_radio_val.set_title("Valid Options")
         ax_radio_val.axis('off')
         self.radio_val = RadioButtons(
@@ -167,6 +190,18 @@ class Viewer:
         )
 
         self.radio_val.on_clicked(self._on_radio_click)
+
+        # checkbutton
+        ax_check_theta = self.fig.add_axes([0.55, 0.15, 0.30, 0.12])
+        ax_check_theta.set_title("Show At Theta Only")
+        ax_check_theta.axis('off')
+        self.check_theta = CheckButtons(
+            ax_check_theta,
+            labels=["Show Boundary Point At Theta Only"],
+            actives=[False]
+        )
+
+        self.check_theta.on_clicked(self._on_toggle)
 
     def _init_widgets(self):
         self.fig.subplots_adjust(
@@ -178,8 +213,10 @@ class Viewer:
         self._init_sliders()
         self._init_buttons()
 
-    def _on_slider_change(self, val):
-        self.current_threshold_index = int(val)
+    def _on_slider_change(self, threshold_index, current_theta):
+        self.current_threshold_index = threshold_index
+        self.current_theta = current_theta
+
         self.render()
 
     def _on_toggle(self, label):
@@ -189,6 +226,8 @@ class Viewer:
             self.show_nnunet = not self.show_nnunet
         elif label == "Threshold":
             self.show_threshold = not self.show_threshold
+        elif label == "Show Boundary Point At Theta Only":
+            self.show_at_theta_only = not self.show_at_theta_only
         
         self.render()
 
@@ -209,7 +248,13 @@ class Viewer:
 
         colors = np.full(threshold_boundary.shape[0], 'green')
 
-        if self.show_all:
+        if self.show_at_theta_only:
+            point = threshold_boundary[self.current_theta]
+            color = 'green'
+
+            return np.array([point]), np.array([color])
+
+        elif self.show_all:
             return threshold_boundary, colors
         elif self.mark_valid:
             colors[invalid_indices] = 'red'
