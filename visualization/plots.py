@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, CheckButtons
 import numpy as np
 
 class VentricleData():
@@ -134,12 +134,14 @@ class Viewer:
         self.show_threshold = True
 
         self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
+
         self._init_widgets()
 
+        self.threshold_info = ""
         self.current_threshold_index = 0
     
-    def _init_widgets(self):
-        ax_slider = self.fig.add_axes([0.2, 0.01, 0.65, 0.03])
+    def _init_sliders(self):
+        ax_slider = self.fig.add_axes([0.15, 0.10, 0.70, 0.03])
 
         self.slider = Slider(
             ax=ax_slider,
@@ -151,21 +153,41 @@ class Viewer:
         )
 
         self.slider.on_changed(self._on_slider_change)
+    
+    def _init_buttons(self):
+        ax_check_vis = self.fig.add_axes([0.15, 0.15, 0.30, 0.12])
+        ax_check_vis.set_title("Visibility")
+        ax_check_vis.axis('off')
+        self.check = CheckButtons(
+            ax_check_vis,
+            labels=["GT", "nnUNet", "Threshold"],
+            actives=[True, True, True]
+        )
+
+        self.check.on_clicked(self._on_toggle)
+
+    def _init_widgets(self):
+        self.fig.subplots_adjust(
+            bottom=0.35,
+            left=0.1,
+            right=0.9,
+            top=0.95
+        )
+        self._init_sliders()
+        self._init_buttons()
 
     def _on_slider_change(self, val):
         self.current_threshold_index = int(val)
         self.render()
-    
-    def toggle_gt(self, show: bool):
-        self.show_gt = show
-        self.render()
 
-    def toggle_nnunet(self, show: bool):
-        self.show_nnunet = show
-        self.render()
-
-    def toggle_threshold(self, show: bool):
-        self.show_threshold = show
+    def _on_toggle(self, label):
+        if label == "GT":
+            self.show_gt = not self.show_gt
+        elif label == "nnUNet":
+            self.show_nnunet = not self.show_nnunet
+        elif label == "Threshold":
+            self.show_threshold = not self.show_threshold
+        
         self.render()
     
     def render(self):
@@ -209,13 +231,13 @@ class Viewer:
             )
         
         if self.show_threshold:
-            threshold_info = _display_threshold_data(
+            self.threshold_info = _display_threshold_data(
                 ax=ax,
                 view_data=self.view_data,
                 index=self.current_threshold_index
             )
         
-        ax.set_title(f"Threshold: {threshold_info}")
+        ax.set_title(f"Threshold: {self.threshold_info}")
         ax.legend()
         fig.canvas.draw_idle()
 
