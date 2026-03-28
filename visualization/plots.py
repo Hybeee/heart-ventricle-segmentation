@@ -97,17 +97,6 @@ class ViewData():
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
-def _display_normal_data(ax, mask, boundary, color, label):
-    ax.scatter(
-        boundary[:, 1],
-        boundary[:, 0],
-        s=5,
-        marker='o',
-        c=color,
-        alpha=0.3,
-        label=label
-    )
-
 class Viewer2D:
     def __init__(self, view_data: ViewData):
         self.view_data = view_data
@@ -286,6 +275,17 @@ class Viewer2D:
         )
 
         return threshold
+    
+    def _display_normal_data(self, ax, mask, boundary, color, label):
+        ax.scatter(
+            boundary[:, 1],
+            boundary[:, 0],
+            s=5,
+            marker='o',
+            c=color,
+            alpha=0.3,
+            label=label
+        )
 
     def render(self):
         fig, ax = self.fig, self.ax
@@ -315,7 +315,7 @@ class Viewer2D:
 
         if self.show_gt:
             gt_mask, gt_boundary = self.view_data.gt_data.get_data(mode=mode)
-            _display_normal_data(
+            self._display_normal_data(
                 ax=ax,
                 mask=gt_mask,
                 boundary=gt_boundary,
@@ -325,7 +325,7 @@ class Viewer2D:
         
         if self.show_nnunet:
             nnunet_mask, nnunet_boundary  = self.view_data.nnunet_data.get_data(mode=mode)
-            _display_normal_data(
+            self._display_normal_data(
                 ax=ax,
                 mask=nnunet_mask,
                 boundary=nnunet_boundary,
