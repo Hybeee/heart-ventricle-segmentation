@@ -80,12 +80,7 @@ class ViewData():
 
         self.alg_results = alg_results
         center = alg_results["preprocessing"]["center"]
-        center = np.array(center)
-        print(f"Center: {center}")
-
-        self.gt_data.center = center
-        self.nnunet_data.center = center
-        self.thresholds_data.center = center
+        self.center = np.array(center)
 
         self.mode = mode
         self.cmap = cmap
@@ -94,14 +89,13 @@ class ViewData():
         mode = mode.lower()
 
         if mode == "cartesian":
-            return self.ct
+            return self.ct, "grey"
         elif mode == "cartesian_transformed":
-            return self.ct
+            return self.ct, "grey"
         elif mode == "polar":
-            return self.polar_grad
+            return self.polar_grad, "jet"
         else:
             raise ValueError(f"Unknown mode: {mode}")
-
 
 def _display_normal_data(ax, mask, boundary, color, label):
     ax.scatter(
@@ -131,78 +125,100 @@ def _display_threshold_data(ax, view_data: ViewData, index):
 
     return threshold
 
-def display_images_on_ax(fig, ax, view_data: ViewData, index):
-    mode = view_data.mode
-    gt_mask, gt_boundary = view_data.gt_data.get_data(mode=mode)
-    nnunet_mask, nnunet_boundary  = view_data.nnunet_data.get_data(mode=mode)
+class Viewer:
+    def __init__(self, view_data: ViewData):
+        self.view_data = view_data
+
+        self.show_gt = True
+        self.show_nnunet = True
+        self.show_threshold = True
+
+        self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
+        self._init_widgets()
+
+        self.current_threshold_index = 0
     
-    ax.clear()
+    def _init_widgets(self):
+        ax_slider = self.fig.add_axes([0.2, 0.01, 0.65, 0.03])
 
-    ct_view = view_data.get_ct_view(mode=mode)
-    ax.imshow(ct_view, cmap=view_data.cmap)
+        self.slider = Slider(
+            ax=ax_slider,
+            label='Threshold Slider',
+            valmin=0,
+            valmax=len(self.view_data.thresholds_data.thresholds) - 1,
+            valinit=0,
+            valstep=1
+        )
 
+        self.slider.on_changed(self._on_slider_change)
 
-    _display_normal_data(
-        ax=ax,
-        mask=gt_mask,
-        boundary=gt_boundary,
-        color="red",
-        label='GT/Doc'
-    )
+    def _on_slider_change(self, val):
+        self.current_threshold_index = int(val)
+        self.render()
+    
+    def toggle_gt(self, show: bool):
+        self.show_gt = show
+        self.render()
 
-    _display_normal_data(
-        ax=ax,
-        mask=nnunet_mask,
-        boundary=nnunet_boundary,
-        color="blue",
-        label='nnUNet'
-    )
+    def toggle_nnunet(self, show: bool):
+        self.show_nnunet = show
+        self.render()
 
-    threshold_info = _display_threshold_data(
-        ax=ax,
-        view_data=view_data,
-        index=index
-    )
+    def toggle_threshold(self, show: bool):
+        self.show_threshold = show
+        self.render()
+    
+    def render(self):
+        fig, ax = self.fig, self.ax
+        ax.clear()
 
-    ax.set_title(f"Threshold: {threshold_info}")
-    ax.legend()
-    fig.canvas.draw()
+        mode = self.view_data.mode
 
-    plt.show()
+        ct_view, cmap = self.view_data.get_ct_view(mode=mode)
+        ax.imshow(ct_view, cmap=cmap)
 
-# NOTE: will be used for view_ct and view_polar
-#       probably will use a different func for view_grad_map()
-def view_threshold_masks(view_data: ViewData):
-    initial_threshold_index = 0
+        if mode != "polar":
+            center = self.view_data.center
+            ax.scatter(
+                center[1],
+                center[0],
+                s=8,
+                marker='x',
+                c='cyan',
+                alpha=0.5
+            )
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        if self.show_gt:
+            gt_mask, gt_boundary = self.view_data.gt_data.get_data(mode=mode)
+            _display_normal_data(
+                ax=ax,
+                mask=gt_mask,
+                boundary=gt_boundary,
+                color='red',
+                label='GT/Doc'
+            )
+        
+        if self.show_nnunet:
+            nnunet_mask, nnunet_boundary  = self.view_data.nnunet_data.get_data(mode=mode)
+            _display_normal_data(
+                ax=ax,
+                mask=nnunet_mask,
+                boundary=nnunet_boundary,
+                color="blue",
+                label='nnUNet'
+            )
+        
+        if self.show_threshold:
+            threshold_info = _display_threshold_data(
+                ax=ax,
+                view_data=self.view_data,
+                index=self.current_threshold_index
+            )
+        
+        ax.set_title(f"Threshold: {threshold_info}")
+        ax.legend()
+        fig.canvas.draw_idle()
 
-    axthreshold = fig.add_axes([0.2, 0.01, 0.65, 0.03])
-    threshold_slider = Slider(
-        ax=axthreshold,
-        label='Threshold Slider',
-        valmin=0,
-        valmax=len(view_data.thresholds_data.thresholds) - 1,
-        valinit=initial_threshold_index,
-        valstep=1
-    )
-
-    threshold_slider.on_changed(
-        lambda index: display_images_on_ax(fig, ax, view_data, int(index))
-    )
-
-    display_images_on_ax(
-        fig,
-        ax,
-        view_data,
-        int(initial_threshold_index)
-    )
-
-def view_ct(view_data: ViewData):
-    view_threshold_masks(view_data=view_data)
-
-def view_polar():
-    pass
-
-def view_1d_grad_map():
-    pass
+    def show(self):
+        self.render()
+        plt.show()
