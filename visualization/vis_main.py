@@ -148,7 +148,7 @@ def main():
         config["cleanup"] = False
         config["output_dir_name"] = input_dir_name
         config["postprocessing"]["save_3d_mask"] = False
-        config["postprocessing"]["include_detailed_valley_data"] = False
+        config["postprocessing"]["include_detailed_valley_data"] = True
 
         with open(os.path.join(ROOT_DIR, "patients_data.json"), 'r') as f:
             patients_data = yaml.safe_load(f)
@@ -162,7 +162,7 @@ def main():
     
     view_data = _load_data(input_dir=input_dir)
     
-    view_data.mode = "cartesian_transformed"
+    view_data.mode = "polar"
     viewer = Viewer(view_data=view_data)
     viewer.show()
 

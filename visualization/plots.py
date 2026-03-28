@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.widgets import Slider, CheckButtons, RadioButtons
 import numpy as np
 
 class VentricleData():
@@ -108,23 +108,6 @@ def _display_normal_data(ax, mask, boundary, color, label):
         label=label
     )
 
-def _display_threshold_data(ax, view_data: ViewData, index):
-    threshold = view_data.thresholds_data.thresholds[index]
-    threshold_data = view_data.thresholds_data.thresholds_data[threshold]
-    threshold_mask, threshold_boundary = threshold_data.get_data(mode=view_data.mode)
-
-    ax.scatter(
-        threshold_boundary[:, 1],
-        threshold_boundary[:, 0],
-        s=5,
-        marker='o',
-        c='green',
-        alpha=0.3,
-        label='approximation'
-    )
-
-    return threshold
-
 class Viewer:
     def __init__(self, view_data: ViewData):
         self.view_data = view_data
@@ -133,6 +116,11 @@ class Viewer:
         self.show_gt = True
         self.show_nnunet = True
         self.show_threshold = True
+
+        # radiobutton states
+        self.show_all = True
+        self.mark_valid = False
+        self.show_only_valid = False
 
         self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
 
@@ -156,16 +144,29 @@ class Viewer:
         self.slider.on_changed(self._on_slider_change)
     
     def _init_buttons(self):
+        # checkbutton
         ax_check_vis = self.fig.add_axes([0.15, 0.15, 0.30, 0.12])
         ax_check_vis.set_title("Visibility")
         ax_check_vis.axis('off')
-        self.check = CheckButtons(
+        self.check_vis = CheckButtons(
             ax_check_vis,
             labels=["GT", "nnUNet", "Threshold"],
             actives=[True, True, True]
         )
 
-        self.check.on_clicked(self._on_toggle)
+        self.check_vis.on_clicked(self._on_toggle)
+
+        # radiobutton
+        ax_radio_val = self.fig.add_axes([0.55, 0.15, 0.30, 0.12])
+        ax_radio_val.set_title("Valid Options")
+        ax_radio_val.axis('off')
+        self.radio_val = RadioButtons(
+            ax_radio_val,
+            labels=["Show All", "Mark Valid", "Show Only Valid"],
+            active=0
+        )
+
+        self.radio_val.on_clicked(self._on_radio_click)
 
     def _init_widgets(self):
         self.fig.subplots_adjust(
@@ -190,7 +191,57 @@ class Viewer:
             self.show_threshold = not self.show_threshold
         
         self.render()
-    
+
+    def _on_radio_click(self, label):
+        self.show_all = (label == "Show All")
+        self.mark_valid = (label == "Mark Valid")
+        self.show_only_valid = (label == "Show Only Valid")
+
+        self.render()
+
+    def _filter_threshold_boundary(self, threshold, threshold_boundary):
+        threshold_data = self.view_data.alg_results["postprocessing"][threshold]
+        bp_data = threshold_data["valley_score_data"]["bp_data"]
+        
+        indices = np.arange(0, 360, 1)
+        valid_indices = np.array(bp_data)[:, 0]
+        invalid_indices = np.setdiff1d(indices, valid_indices)
+
+        colors = np.full(threshold_boundary.shape[0], 'green')
+
+        if self.show_all:
+            return threshold_boundary, colors
+        elif self.mark_valid:
+            colors[invalid_indices] = 'red'
+            return threshold_boundary, colors
+        elif self.show_only_valid:
+            threshold_boundary = threshold_boundary[valid_indices.astype(int)]
+            colors = colors[valid_indices.astype(int)]
+
+            return threshold_boundary, colors
+            
+
+    def _display_threshold_data(self, ax, view_data: ViewData, index):
+        threshold = view_data.thresholds_data.thresholds[index]
+        threshold_data = view_data.thresholds_data.thresholds_data[threshold]
+        threshold_mask, threshold_boundary = threshold_data.get_data(mode=view_data.mode)
+
+        if view_data.mode != "cartesian":
+            threshold_boundary, colors = self._filter_threshold_boundary(threshold=threshold,
+                                                                 threshold_boundary=threshold_boundary)
+
+        ax.scatter(
+            threshold_boundary[:, 1],
+            threshold_boundary[:, 0],
+            s=5,
+            marker='o',
+            c=colors,
+            alpha=0.3,
+            label='approximation'
+        )
+
+        return threshold
+
     def render(self):
         fig, ax = self.fig, self.ax
 
@@ -238,7 +289,7 @@ class Viewer:
             )
         
         if self.show_threshold:
-            self.threshold_info = _display_threshold_data(
+            self.threshold_info = self._display_threshold_data(
                 ax=ax,
                 view_data=self.view_data,
                 index=self.current_threshold_index
