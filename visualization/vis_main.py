@@ -5,6 +5,7 @@ import os
 
 from main import _process_one_patient
 from visualization.plots import ViewData, VentricleData, ThresholdsData
+import visualization.plots as plots
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -158,6 +159,9 @@ def main():
     
     view_data = _load_data(input_dir=input_dir)
     
+    view_data.mode = "cartesian"
+    view_data.cmap = "grey"
+    plots.view_ct(view_data=view_data)
 
 if __name__ == "__main__":
     main()
