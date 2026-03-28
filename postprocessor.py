@@ -86,6 +86,8 @@ class PostProcessor():
         x_spacing = self.spacing[2]
         y_spacing = self.spacing[1]
 
+        thetas = np.deg2rad(thetas)
+
         r1_xs = r1s * np.cos(thetas)
         r1_xs_mm = r1_xs * x_spacing
         r1_ys = r1s * np.sin(thetas)
