@@ -106,6 +106,7 @@ class Viewer2D:
         self.show_nnunet = True
         self.show_threshold = True
         self.show_at_theta_only = False
+        self.theta_draw_line = False
 
         # radiobutton states
         self.show_all = True
@@ -186,8 +187,8 @@ class Viewer2D:
         ax_check_theta.axis('off')
         self.check_theta = CheckButtons(
             ax_check_theta,
-            labels=["Show Boundary Point At Theta Only"],
-            actives=[False]
+            labels=["Show Boundary Point At Theta Only", "Draw Line"],
+            actives=[False, False]
         )
 
         self.check_theta.on_clicked(self._on_toggle)
@@ -217,6 +218,8 @@ class Viewer2D:
             self.show_threshold = not self.show_threshold
         elif label == "Show Boundary Point At Theta Only":
             self.show_at_theta_only = not self.show_at_theta_only
+        elif label == "Draw Line":
+            self.theta_draw_line = not self.theta_draw_line
         
         self.render()
 
@@ -239,7 +242,7 @@ class Viewer2D:
 
         if self.show_at_theta_only:
             point = threshold_boundary[self.current_theta_index]
-            color = 'green'
+            color = 'red' if self.current_theta_index in invalid_indices else 'green'
 
             return np.array([point]), np.array([color])
 
@@ -271,8 +274,21 @@ class Viewer2D:
             marker='o',
             c=colors,
             alpha=0.3,
-            label='approximation'
+            label='Approximation'
         )
+
+        if self.show_at_theta_only and self.theta_draw_line:
+            points = np.array([threshold_boundary[0], self.view_data.center])
+            xs = points[:, 1]
+            ys = points[:, 0]
+            
+            ax.plot(
+                xs,
+                ys,
+                color='green',
+                linewidth=1,
+                alpha=0.5
+            )
 
         return threshold
     
