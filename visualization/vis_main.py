@@ -195,14 +195,15 @@ def main():
         patient_id="patient_0001"
     )
 
-    # patients_to_process = []
-    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
-    #     for line in file:
-    #         line = line.strip()
-    #         patients_to_process.append(line)
-    # _vis_process_multiple_patients(
-    #     patients_to_process=patients_to_process
-    # )
+    patients_to_process = []
+    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+        for line in file:
+            line = line.strip()
+            patients_to_process.append(line)
+    _vis_process_multiple_patients(
+        input_dir_name="vis_output",
+        patients_to_process=patients_to_process
+    )
 
 if __name__ == "__main__":
     main()
