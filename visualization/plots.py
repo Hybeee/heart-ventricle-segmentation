@@ -409,6 +409,13 @@ class Viewer1D:
 
         self._init_widgets()
 
+        # checkbutton states
+        self.show_valleys = True
+
+        # radiobutton states
+        self.valley_points = True
+        self.valley_lines = False
+
         self.title = ""
         self.current_threshold_index = 0
         self.current_theta_index = 0
@@ -448,6 +455,30 @@ class Viewer1D:
             lambda val: self._on_slider_change(threshold_index=self.current_threshold_index, current_theta_index=val)
         )
 
+    def _init_buttons(self):
+        ax_check_valley_display = self.fig.add_axes([0.15, 0.20, 0.30, 0.08])
+        ax_check_valley_display.set_title("Valley Info")
+        ax_check_valley_display.axis('off')
+
+        # checkbutton
+        self.check_valley_display = CheckButtons(
+            ax_check_valley_display,
+            labels=["Show Valleys"],
+            actives=[True]
+        )
+        self.check_valley_display.on_clicked(self._on_toggle)
+
+        # radiobutton
+        ax_radio_valley_display = self.fig.add_axes([0.15, 0.15, 0.30, 0.08])
+        ax_radio_valley_display.axis('off')
+
+        self.radio_valley_display = RadioButtons(
+            ax_radio_valley_display,
+            labels=["Display as points", "Display as lines"],
+            active=0
+        )
+        self.radio_valley_display.on_clicked(self._on_radio_click)
+
     def _init_widgets(self):
         self.fig.subplots_adjust(
             bottom=0.35,
@@ -455,11 +486,25 @@ class Viewer1D:
             right=0.9,
             top=0.95
         )
+
         self._init_sliders()
+        self._init_buttons()
 
     def _on_slider_change(self, threshold_index, current_theta_index):
         self.current_threshold_index = threshold_index
         self.current_theta_index = current_theta_index
+
+        self.render()
+
+    def _on_toggle(self, label):
+        if label == "Show Valleys":
+            self.show_valleys = not self.show_valleys
+        
+        self.render()
+
+    def _on_radio_click(self, label):
+        self.valley_points = (label == "Display as points")
+        self.valley_lines = (label == "Display as lines")
 
         self.render()
 
@@ -478,6 +523,8 @@ class Viewer1D:
 
     def _display_threshold_data(self, ax, grad_map_1d):
         threshold = self.view_data.thresholds_data.thresholds[self.current_threshold_index]
+        self.title = threshold
+        
         threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
         point = threshold_data.polar_boundary[self.current_theta_index]
 
@@ -490,14 +537,34 @@ class Viewer1D:
 
         valley_values = grad_map_1d[valley_rs]
 
-        ax.scatter(
-            valley_rs,
-            valley_values,
-            s=10,
-            c='purple',
-            marker='o',
-            label='Valley'
-        )
+        if self.valley_points:
+            ax.scatter(
+                valley_rs,
+                valley_values,
+                s=10,
+                c='purple',
+                marker='o',
+            )
+        elif self.valley_lines:
+            for valley_loc in valley_rs:
+                r_pair = [valley_loc, valley_loc + 1]
+                value_pair = grad_map_1d[valley_loc:valley_loc+2]
+
+                ax.plot(
+                    r_pair,
+                    value_pair,
+                    color='purple',
+                    alpha=0.5,
+                    linewidth=2,
+                )
+
+                ax.scatter(
+                    r_pair,
+                    value_pair,
+                    s=10,
+                    c='purple',
+                    marker='o',
+                )
 
     def render(self):
         fig, ax = self.fig, self.ax
@@ -517,11 +584,15 @@ class Viewer1D:
         self._display_normal_data(ax, grad_map_1d, gt_point, 'red', 'GT/Doc')
         self._display_normal_data(ax, grad_map_1d, nnunet_point, 'blue', 'nnUNet')
         self._display_threshold_data(ax, grad_map_1d)
-        self._display_valleys(ax, grad_map_1d, max_r)
+        if self.show_valleys:
+            self._display_valleys(ax, grad_map_1d, max_r)
 
         ax.set_xlabel("Radii")
         ax.set_ylabel("Gradient Value")
         ax.set_title(self.title)
+        ax.legend()
+
+        fig.canvas.draw_idle()
 
     def show(self):
         self.render()
