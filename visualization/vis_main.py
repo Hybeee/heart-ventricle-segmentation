@@ -163,6 +163,7 @@ def _vis_process_one_patient(input_dir_name: str, patient_id: str):
 
 def _vis_process_multiple_patients(input_dir_name: str, patients_to_process: list[str]):
     for patient_id in patients_to_process:
+        print(f"{patient_id}")
         _vis_process_one_patient(
             input_dir_name=input_dir_name,
             patient_id=patient_id
