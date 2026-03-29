@@ -537,14 +537,14 @@ class Viewer1D:
             label=label
         )
 
-    def _display_threshold_data(self, ax, grad_map_1d):
+    def _get_threshold_point(self):
         threshold = self.view_data.thresholds_data.thresholds[self.current_threshold_index]
         self.title = threshold
         
         threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
         point = threshold_data.polar_boundary[self.current_theta_index]
 
-        self._display_normal_data(ax, grad_map_1d, point, 'green', 'Approximation')
+        return point
 
     def _display_valleys(self, ax, grad_map_1d, max_r):
         valley_locations = self.valley_data.valley_positions[self.current_theta_index]
@@ -591,15 +591,17 @@ class Viewer1D:
     
         gt_point = self.view_data.gt_data.polar_boundary[self.current_theta_index]
         nnunet_point = self.view_data.nnunet_data.polar_boundary[self.current_theta_index]
-        
-        max_r = min(nnunet_point[0] + 15, len(grad_map_1d)-1)
+        threshold_point = self._get_threshold_point()
+
+        max_bp = max(gt_point[0], nnunet_point[0], threshold_point[0])
+        max_r = min(max_bp + 15, len(grad_map_1d)-1)
         grad_map_1d = grad_map_1d[:max_r]
 
         ax.plot(grad_map_1d)
 
         self._display_normal_data(ax, grad_map_1d, gt_point, 'red', 'GT/Doc')
         self._display_normal_data(ax, grad_map_1d, nnunet_point, 'blue', 'nnUNet')
-        self._display_threshold_data(ax, grad_map_1d)
+        self._display_normal_data(ax, grad_map_1d, threshold_point, 'green', 'Approximation')
         if self.show_valleys:
             self._display_valleys(ax, grad_map_1d, max_r)
 

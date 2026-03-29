@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 import os
 import sys
+import multiprocessing as mp
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -169,6 +170,14 @@ def _vis_process_multiple_patients(input_dir_name: str, patients_to_process: lis
             patient_id=patient_id
         )
 
+def _display(view_data: ViewData, dim: int):
+    if dim == 1:
+        viewer = Viewer1D(view_data=view_data)
+    else:
+        viewer = Viewer2D(view_data=view_data)
+
+    viewer.show()
+
 def _visualize_patient(input_dir_name: str, patient_id: str):
     input_dir = os.path.join(ROOT_DIR, input_dir_name, patient_id)
     
@@ -180,9 +189,16 @@ def _visualize_patient(input_dir_name: str, patient_id: str):
 
     view_data = _load_data(input_dir=input_dir)
     
-    view_data.mode = "cartesian_transformed"
-    viewer = Viewer2D(view_data=view_data)
-    viewer.show()
+    view_data.mode = "polar"
+    
+    p1 = mp.Process(target=_display, args=(view_data, 1,))
+    p2 = mp.Process(target=_display, args=(view_data, 2,))
+
+    p1.start()
+    p2.start()
+
+    p1.join()
+    p2.join()
 
 def main():
     # _vis_process_one_patient(
@@ -192,18 +208,18 @@ def main():
 
     _visualize_patient(
         input_dir_name="vis_output",
-        patient_id="patient_0001"
+        patient_id="patient_0045"
     )
 
-    patients_to_process = []
-    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
-        for line in file:
-            line = line.strip()
-            patients_to_process.append(line)
-    _vis_process_multiple_patients(
-        input_dir_name="vis_output",
-        patients_to_process=patients_to_process
-    )
+    # patients_to_process = []
+    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+    #     for line in file:
+    #         line = line.strip()
+    #         patients_to_process.append(line)
+    # _vis_process_multiple_patients(
+    #     input_dir_name="vis_output",
+    #     patients_to_process=patients_to_process
+    # )
 
 if __name__ == "__main__":
     main()
