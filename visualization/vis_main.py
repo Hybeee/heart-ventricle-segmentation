@@ -2,12 +2,15 @@ import numpy as np
 
 import yaml
 import os
+import sys
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 from main import _process_one_patient
 from visualization.plots import ViewData, VentricleData, ThresholdsData, Viewer1D, Viewer2D
 import visualization.plots as plots
-
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _load_thresholds_data(thresholds_dir: str, alg_results: dict, center) -> ThresholdsData:
     thresholds = []
@@ -186,19 +189,19 @@ def main():
     #     patient_id="patient_0001"
     # )
 
-    # _visualize_patient(
-    #     input_dir_name="vis_output",
-    #     patient_id="patient_0001"
-    # )
-
-    patients_to_process = []
-    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
-        for line in file:
-            line = line.strip()
-            patients_to_process.append(line)
-    _process_multiple_patients(
-        patients_to_process=patients_to_process
+    _visualize_patient(
+        input_dir_name="vis_output",
+        patient_id="patient_0001"
     )
+
+    # patients_to_process = []
+    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+    #     for line in file:
+    #         line = line.strip()
+    #         patients_to_process.append(line)
+    # _process_multiple_patients(
+    #     patients_to_process=patients_to_process
+    # )
 
 if __name__ == "__main__":
     main()
