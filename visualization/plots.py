@@ -434,7 +434,17 @@ class Viewer1D:
 
         self.title = ""
         self.current_threshold_index = 0
+        self.prev_threshold_index = self.current_threshold_index
+        self._set_threshold_valley_data()
         self.current_theta_index = 0
+
+    def _set_threshold_valley_data(self):
+        threshold = self.view_data.thresholds_data.thresholds[self.current_threshold_index]
+        threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
+
+        self.threshold_valley_data = self.valley_data.get_valley_data(
+            boundary_points=threshold_data.polar_boundary
+        )
 
     def _init_sliders(self):
         ax_threshold_slider = self.fig.add_axes([0.20, 0.10, 0.70, 0.03])
@@ -500,14 +510,19 @@ class Viewer1D:
             bottom=0.35,
             left=0.1,
             right=0.9,
-            top=0.95
+            top=0.85
         )
 
         self._init_sliders()
         self._init_buttons()
 
     def _on_slider_change(self, threshold_index, current_theta_index):
+        self.prev_threshold_index = self.current_threshold_index
         self.current_threshold_index = threshold_index
+
+        if self.prev_threshold_index != self.current_threshold_index:
+            self._set_threshold_valley_data()
+
         self.current_theta_index = current_theta_index
 
         self.render()
@@ -537,12 +552,30 @@ class Viewer1D:
             label=label
         )
 
-    def _get_threshold_point(self):
+    def _handle_threshold_point(self, grad_map_1d):
         threshold = self.view_data.thresholds_data.thresholds[self.current_threshold_index]
-        self.title = threshold
         
         threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
+        
+        bp_data = self.view_data.alg_results["postprocessing"][threshold]["valley_score_data"]["bp_data"]
+        valid_indices = np.array(bp_data)[:, 0]
+        valid = self.current_theta_index in valid_indices
+
         point = threshold_data.polar_boundary[self.current_theta_index]
+
+        weight = grad_map_1d[point[0]]
+
+        (_, valley_positions) = self.threshold_valley_data
+        valley_position = valley_positions[self.current_theta_index]
+        distance = (point[0] - valley_position)**2
+
+        self.title = (
+            f"Threshold: {threshold}\n"
+            f"Valid: {valid}\n"
+            f"Weight: {weight:.4f}\n"
+            f"Distance: {distance}\n"
+            f"Score: {(abs(weight) * distance):.4f}"
+        )
 
         return point
 
@@ -591,7 +624,7 @@ class Viewer1D:
     
         gt_point = self.view_data.gt_data.polar_boundary[self.current_theta_index]
         nnunet_point = self.view_data.nnunet_data.polar_boundary[self.current_theta_index]
-        threshold_point = self._get_threshold_point()
+        threshold_point = self._handle_threshold_point(grad_map_1d=grad_map_1d) 
 
         max_bp = max(gt_point[0], nnunet_point[0], threshold_point[0])
         max_r = min(max_bp + 15, len(grad_map_1d)-1)
