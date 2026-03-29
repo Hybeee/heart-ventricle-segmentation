@@ -136,9 +136,7 @@ def _load_data(input_dir: str) -> ViewData:
 
     return view_data
 
-def main():
-    patient_id = "patient_0001"
-    input_dir_name = "vis_output"
+def _process_one_patient(input_dir_name: str, patient_id: str):
     input_dir = os.path.join(ROOT_DIR, input_dir_name, patient_id)
 
     if (not os.path.exists(input_dir)) or (not os.path.exists(os.path.join(input_dir, "preprocessing"))):
@@ -159,12 +157,48 @@ def main():
             patient_data=patient_data,
             config=config
         )
+
+def _process_multiple_patients(input_dir_name: str, patients_to_process: list[str]):
+    for patient_id in patients_to_process:
+        _process_one_patient(
+            input_dir_name=input_dir_name,
+            patient_id=patient_id
+        )
+
+def _visualize_patient(input_dir_name: str, patient_id: str):
+    input_dir = os.path.join(ROOT_DIR, input_dir_name, patient_id)
     
+    if not os.path.exists(input_dir):
+        _process_one_patient(
+            input_dir_name=input_dir_name,
+            patient_id=patient_id
+        )
+
     view_data = _load_data(input_dir=input_dir)
     
     view_data.mode = "cartesian_transformed"
     viewer = Viewer2D(view_data=view_data)
     viewer.show()
+
+def main():
+    # _process_one_patient(
+    #     input_dir_name="vis_output",
+    #     patient_id="patient_0001"
+    # )
+
+    # _visualize_patient(
+    #     input_dir_name="vis_output",
+    #     patient_id="patient_0001"
+    # )
+
+    patients_to_process = []
+    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+        for line in file:
+            line = line.strip()
+            patients_to_process.append(line)
+    _process_multiple_patients(
+        patients_to_process=patients_to_process
+    )
 
 if __name__ == "__main__":
     main()
