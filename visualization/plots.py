@@ -558,23 +558,31 @@ class Viewer1D:
         threshold_data = self.view_data.thresholds_data.thresholds_data[threshold]
         
         bp_data = self.view_data.alg_results["postprocessing"][threshold]["valley_score_data"]["bp_data"]
-        valid_indices = np.array(bp_data)[:, 0]
+        bp_data = np.array(bp_data)
+        valid_indices = bp_data[:, 0]
         valid = self.current_theta_index in valid_indices
 
         point = threshold_data.polar_boundary[self.current_theta_index]
 
-        weight = grad_map_1d[point[0]]
-
         (_, valley_positions) = self.threshold_valley_data
         valley_position = valley_positions[self.current_theta_index]
-        distance = (point[0] - valley_position)**2
+        
+        weight = grad_map_1d[valley_position]
+
+        try:
+            distance_mm = bp_data[bp_data[:, 0] == self.current_theta_index][0, 2]
+            mm_score = f"{(abs(weight) * distance_mm):.4f}"
+        except Exception as e:
+            distance_mm = "Invalid theta, not calculated."
+            mm_score = distance_mm
+        distance_px = (point[0] - valley_position)**2
 
         self.title = (
             f"Threshold: {threshold}\n"
             f"Valid: {valid}\n"
             f"Weight: {weight:.4f}\n"
-            f"Distance: {distance}\n"
-            f"Score: {(abs(weight) * distance):.4f}"
+            f"Distance (px-mm): {distance_px} - {distance_mm}\n"
+            f"Score (px-mm): {(abs(weight) * distance_px):.4f} - {mm_score}"
         )
 
         return point
