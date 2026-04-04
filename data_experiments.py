@@ -45,7 +45,7 @@ def _plot_tv_results():
     pass
 
 def main():
-    patient_id = "patient_0028"
+    patient_id = "patient_0053"
     data_dir = os.path.join("vis_output", patient_id, "preprocessing", "np")
 
     _plot_median_filter_results(data_dir=data_dir)
