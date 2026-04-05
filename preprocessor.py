@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from scipy.ndimage import median_filter
+from skimage.restoration import denoise_tv_bregman
 
 import os
 import json
@@ -117,10 +118,30 @@ def _median_filter(ct, config):
         size=(n, n)
     )
 
+def _tv_bregman_filter(ct, config):
+    weight = config["tv_bregman"]["weight"]
+
+    ct_min = ct.min()
+    ct_max = ct.max()
+
+    if ct_max - ct_min == 0:
+        print("Range of CT is 0. Returning without performing TV filter.")
+        return ct.copy()
+
+    ct = (ct - ct_min) / (ct_max - ct_min)
+
+    filtered_ct = denoise_tv_bregman(ct, weight=weight)
+
+    filtered_ct = filtered_ct * (ct_max - ct_min) + ct_min
+
+    return filtered_ct
+
 def _filter_ct(ct, config):
     method = config["filter_type"]
     if method == "median":
         return _median_filter(ct, config)
+    elif method == "tv_bregman":
+        return _tv_bregman_filter(ct, config)
 
 def _save_np(output_dir, array, name):
     np.save(os.path.join(output_dir, f"{name}.npy"), array)
