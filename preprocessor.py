@@ -148,7 +148,7 @@ def preprocess(config: dict,
 
     ct = ct[z_middle, :, :]
     if config["use_filter"]:
-        ct = _filter_ct(ct)
+        ct = _filter_ct(ct, config)
     if doc_mask is not None:
         doc_mask = doc_mask[z_middle, :, :]
         doc_mask_boundary = utils.get_mask_boundary(doc_mask)
