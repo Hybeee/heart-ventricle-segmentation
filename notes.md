@@ -1,15 +1,15 @@
 # Zajos CT-k
-- 2
-- 13
-- 15
-- 21
-- 26
-- 34
-- 35
-- 38
-- 43
-- 45
-- 46
+- 2: hangyafoci
+- 13: kicsi hangyafoci
+- 15: hangyafoci
+- 21: kicsi hangyafoci
+- 26: streaking artifact
+- 34: hangyafoci + kevesbe kontrasztos
+- 35: kicsi hangyafoci
+- 38: kicsi hangyafoci
+- 43: enyhe/sotet hangyafoci
+- 45: streaking artifact
+- 46: enyhe hangyafoci
 
 ## Median filter results (azok leirva, ahol a normálhoz képest változott az eredmény) - 3x3 filter
 dT = (no_filter_threshold - with_filter_threshold)
@@ -62,3 +62,56 @@ Osszefoglalva:
     - 48: ugyanaz, mint 3x3-as esetben
 - Rontott:
 - Megjegyzes: Olyanoknal segitett, akik eredetileg nem voltak problemas felvetelek. Itt se segitett sokat a 31-est leszamitva - illetve a 13-ast, aki viszont gyakorlatilag kivetel.
+
+## TV filter - bregman, weight=10.0
+dT = (no_filter_threshold - with_filter_threshold)
+
+- 6 -> dT = 31, a ket maszk hasonlo, a TV filtered-on kevesebb a lyuk, ami lehet egyebkent rossz? A korvonala mindkettonek szinte ugyanaz
+- 7 -> dT = -12, (nagyon) enyhen alulszegmental a TV.
+- 8 -> dT = 14, de a maszkok kb ugyanazok
+- 10 -> dT = -20, a maszkok egyebkent majdnem ugyanazok
+- 11 -> dT = 20, a TV-s maszk talan egy KICSIT jobb. De az eredeti se nagyon pontatlan
+- 13 -> dT = -8, erdekesseg, hogy a TV-s maszk egy kicsit simabb
+- 15 -> dT = 37, egy kicsit talan jobb a TV-s filter, az eredeti - az orvoshoz kepest - mintha enyhen alulszegmentalna
+- 17 -> dT = 41, a TV kicsit tulszegmental, de cserebe korbeoleli az orvos szegmentaciojat
+- 18 -> dT = -13, de a maszkok kb. ugyanazok
+- 19 -> dT = 21, a maszkok kb. ugyanazok
+- 20 -> dT = 9, a maszkok kb. ugyanazok
+- 21 -> dT = -11, a maszkok kb. ugyanazok
+- 22 -> dT = 25, a maszkok kb. ugyanazok
+- 27 -> dT = 46, a maszkok kb. ugyanazok
+- 28/29 (ugyanazok a felvetelek) -> dT = -5, itt ront a TV
+- 34 -> dT = 34, itt nagyon ront! Erdemes lehet megnezni, ratapad az nnunet-re a jobb kamra fele
+- 35 -> dT = 17, talan itt jobb a TV?
+- 37 -> dT = -13, a maszkok ugyanazok
+- 38 -> dT = -27, TV alulszegmental
+- 39 -> dT = 16, itt szerintem javit a TV
+- 40 -> dT = -17, maszkok kb. ugyanazok
+- 42 -> dT = -15, nagyon alulszegmental a TV
+- 44 -> dT = -12, a maszkok kb. ugyanazok
+- 45 -> dT = 84, megoldja a streaking problemat!
+- 48 -> dT = 128, kb ugyanaz, az eredeti talan minimalisan alulszegmental - az orvosi maszkhoz kepest
+- 49 -> dT = 66, a TV tulszegmental
+- 50 -> dT = -53, a TV alulszegmental
+- 51 -> dT = 0.29, kicsit simabb a TV maszk
+
+Osszefoglalva:
+    - Javitott:
+        - 11
+        - 15
+        - 35
+        - 39
+        - 45: streaking problemat megoldja
+        - 48: "javit"
+    - Rontott: 
+        - 7
+        - 17: ez leet javitas/rontas is
+        - 28/29: "rontas" - ugyanolyan rossz
+        - 34: nnunet-re ratapad, egyik legdurvabb rontas
+        - 38
+        - 42
+        - 49
+        - 50
+
+Measuring image noise - "Image Quality Assessment: From Error Visibility to
+Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
