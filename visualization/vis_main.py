@@ -207,8 +207,8 @@ def main():
     # )
 
     _visualize_patient(
-        input_dir_name="vis_output",
-        patient_id="patient_0013"
+        input_dir_name="vis_output_1",
+        patient_id="patient_0045"
     )
 
     # patients_to_process = []

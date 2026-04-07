@@ -96,22 +96,23 @@ dT = (no_filter_threshold - with_filter_threshold)
 - 51 -> dT = 0.29, kicsit simabb a TV maszk
 
 Osszefoglalva:
-    - Javitott:
-        - 11
-        - 15
-        - 35
-        - 39
-        - 45: streaking problemat megoldja
-        - 48: "javit"
-    - Rontott: 
-        - 7
-        - 17: ez leet javitas/rontas is
-        - 28/29: "rontas" - ugyanolyan rossz
-        - 34: nnunet-re ratapad, egyik legdurvabb rontas
-        - 38
-        - 42
-        - 49
-        - 50
+- Otlet, hogy miert tudott simabb lenni: A TV a polar resampling elott van alkalmazva -> ez kepes azon valley-ket eltuntetni/megvaltoztatni, amikbe amugy beleragad az eredeti megoldas es igy egy kicsit masabb maszkot eredmenyez? 
+- Javitott:
+    - 11
+    - 15
+    - 35
+    - 39
+    - 45: streaking problemat megoldja
+    - 48: "javit"
+- Rontott: 
+    - 7
+    - 17: ez leet javitas/rontas is
+    - 28/29: "rontas" - ugyanolyan rossz
+    - 34: nnunet-re ratapad, egyik legdurvabb rontas
+    - 38
+    - 42
+    - 49
+    - 50
 
 Measuring image noise - "Image Quality Assessment: From Error Visibility to
 Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf

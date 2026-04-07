@@ -6,6 +6,7 @@ import utils
 
 import os
 import json
+import shutil
 
 def _save_threshold_masks(output_dir,
                           mask, mask_boundary,
@@ -21,6 +22,10 @@ def _save_threshold_masks(output_dir,
 def _create_threshold_masks(ct, ventricle_mask, polar_converter: utils.PolarConverter,
                            config, output_dir, sigma=1.5):
     output_dir = os.path.join(output_dir, "np")
+
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
     ct = gaussian_filter(ct, sigma=sigma)
 
