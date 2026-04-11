@@ -89,6 +89,9 @@ def _load_alg_results(input_dir: str) -> dict:
     if use_nms:
         return _get_nms_results(results)
     else:
+        results["postprocessing"] = dict(
+            sorted(results["postprocessing"].items(), key=lambda x: float(x[0]))
+        )
         return results
 
 def _load_data(input_dir: str) -> ViewData:
