@@ -84,7 +84,7 @@ def _load_alg_results(input_dir: str) -> dict:
     with open(os.path.join(input_dir, "results.json")) as f:
         results = yaml.safe_load(f)
     
-    use_nms = True
+    use_nms = False
 
     if use_nms:
         return _get_nms_results(results)

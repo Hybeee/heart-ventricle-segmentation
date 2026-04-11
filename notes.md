@@ -102,7 +102,7 @@ Osszefoglalva:
     - 15
     - 35
     - 39
-    - 45: streaking problemat megoldja
+    - 45: streaking problemat megoldja -> Miert? Mert a zajszures hatasara szinte mindegyik magas threshold, ami meg valid, raragad a streaking artifactra. Ami nem ragad ra, ott pedig altalanossagaban a volgyektol vett tavolsag sokkal nagyobb, mint a helyes megoldas eseten. Ez egyebkent nem feltetlen az a megoldas, amire szamitottam, de segitett.
     - 48: "javit"
 - Rontott: 
     - 7
