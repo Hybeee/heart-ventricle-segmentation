@@ -10,6 +10,74 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+class StreakingArtifactDetector:
+    def __init__(self, func, smooth=True, verbose=False):
+        self.func = func
+        if not smooth:
+            self.func = gaussian_filter1d(func, sigma=2, mode='wrap')
+
+        self.verbose = verbose
+
+        self.peaks, _ = find_peaks(self.func)
+        self.valleys, _ = find_peaks(-self.func)
+
+        self.local_window = 100
+        self.min_grad_value = 200
+        self.max_length = 50
+
+    def return_artifacts(self) -> tuple[int, int, int]:
+        peak_heights = self.func[self.peaks]
+
+        z_scores_local = np.zeros(len(self.peaks))
+        for i, peak in enumerate(self.peaks):
+            dists = np.abs(self.peaks - peak)
+            dists = np.minimum(dists, 360 - dists)
+            neighborhood = peak_heights[dists <= self.local_window]
+
+            if peak < self.min_grad_value:
+                z_scores_local[i] = 0.0
+                continue
+
+            if len(neighborhood) < 3:
+                z_scores_local[i] = 0.0
+                continue
+
+            local_mean = neighborhood.mean()
+            local_std = neighborhood.std()
+
+            if local_std == 0:
+                z_scores_local[i] = 0.0
+                continue
+
+            z_scores_local[i] = (peak_heights[i] - local_mean) / local_std
+
+            if (peak == 175 or peak == 217 or peak == 183) and self.verbose:
+                print(neighborhood)
+                print(local_mean)
+                print(local_std)
+                print(z_scores_local[i])
+
+        artifact_peaks = self.peaks[z_scores_local > 2.0]
+
+        artifacts = []
+        for peak in artifact_peaks:
+            left_valleys = self.valleys[self.valleys < peak]
+            right_valleys = self.valleys[self.valleys > peak]
+
+            if len(left_valleys) == 0 or len(right_valleys) == 0:
+                continue
+
+            start = left_valleys[-1]
+            end = right_valleys[0]
+
+            if end - start > self.max_length:
+                continue
+
+            artifacts.append((start, peak, end))
+
+        return artifacts
+        
+
 def _plot_1d_func(values, xlabel, ylabel):
     plt.plot(values)
     plt.axhline(y=0, color='r', linestyle='--')
@@ -18,7 +86,6 @@ def _plot_1d_func(values, xlabel, ylabel):
     plt.show()
 
 def _process_data(patient_id):
-        print(patient_id)
         patient_dir = os.path.join("vis_output", patient_id)
 
         grad_map_path = os.path.join(patient_dir, "preprocessing", "np", "polar_dir_grad.npy")
@@ -42,34 +109,21 @@ def _process_data(patient_id):
         #     c='blue'
         # )
         # plt.show()
+    
+        artifact_detector = StreakingArtifactDetector(
+            func=smoothed_values,
+            smooth=True
+        )
+        artifacts = artifact_detector.return_artifacts()
 
-        _plot_1d_func(smoothed_values, "Theta", "Value")
+        # _plot_1d_func(smoothed_values, "Theta", "Value")
 
         deriv = np.diff(smoothed_values, append=smoothed_values[0])
 
-        _plot_1d_func(deriv, "Theta", "Value")
+        # _plot_1d_func(deriv, "Theta", "Value")
 
-        peaks, properties = find_peaks(smoothed_values)
-        peak_heights = smoothed_values[peaks]
-        z_scores = (peak_heights - peak_heights.mean()) / peak_heights.std()
-
-        artifact_peaks = peaks[z_scores > 2.0]
-
-        troughs, _ = find_peaks(-smoothed_values)
-        
-        artifacts = []
-        for peak in artifact_peaks:
-            left_troughs = troughs[troughs < peak]
-            right_troughs = troughs[troughs > peak]
-
-            if len(left_troughs) == 0 or len(right_troughs) == 0:
-                continue
-
-            start = left_troughs[-1]
-            end = right_troughs[0]
-
-            artifacts.append((start, peak, end))
-
+        if artifacts:
+            print(patient_id)
         for artifact in artifacts:
             start, peak, end = artifact
             print(f"\tStart: {start}")
@@ -78,19 +132,19 @@ def _process_data(patient_id):
             print("\t======")
 
 def main():
-    # patients_to_process = []
-    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
-    #     for line in file:
-    #         line = line.strip()
-    #         patients_to_process.append(line)
+    patients_to_process = []
+    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+        for line in file:
+            line = line.strip()
+            patients_to_process.append(line)
 
-    # for patient_id in patients_to_process:
-    #     if patient_id == "patient_0025":
-    #         continue
-    #     _process_data(patient_id)
+    for patient_id in patients_to_process:
+        if patient_id == "patient_0025":
+            continue
+        _process_data(patient_id)
 
-    patient_id = "patient_0045"
-    _process_data(patient_id)
+    # patient_id = "patient_0022"
+    # _process_data(patient_id)
 
 if __name__ == "__main__":
     main()
