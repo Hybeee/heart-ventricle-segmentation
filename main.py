@@ -231,14 +231,17 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
     if polar_converter is None:
         return
     
-    print("Preprocessing finished successfully!")
+    if config["verbose"]:
+        print("Preprocessing finished successfully!")
 
     thresholds.create_and_rank_threshold_masks(
         config=config['thresholds'],
         output_dir=output_dir,
         polar_converter=polar_converter
     )
-    print("Thresholding finished successfully!")
+
+    if config["verbose"]:
+        print("Thresholding finished successfully!")
 
     postprocessor = PostProcessor(
         config=config["postprocessing"],
@@ -262,7 +265,9 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
             output_path=os.path.join(output_dir, "mask.nii.gz")
         )
 
-        print("Starting algorithm")
+        if config["verbose"]:
+            print("Starting algorithm")
+        
         reconstr_mask = utils.remove_segmentation_leakage(
             arc_mask=mask_3d,
             pixel_spacing=spacing
@@ -290,7 +295,8 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
             "reconstructed_mask": reconstr_mask_metrics
         }
 
-    print("Postprocessing finished successfully!")
+    if config["verbose"]:
+        print("Postprocessing finished successfully!")
 
     _save_result_plots(
         output_dir=output_dir,
