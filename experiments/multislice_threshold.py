@@ -22,7 +22,7 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
         config["output_dir_name"] = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, output_dir_names[i])
 
         center_output_dir = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, "center_output")
-        if os.path.exists(center_output_dir):
+        if os.path.exists(center_output_dir) and i != 0:
             center_results_path = os.path.join(center_output_dir, "results.json")
             with open(center_results_path, 'r') as f:
                 center_results = json.load(f)
@@ -52,6 +52,7 @@ def _process_multiple_patient_multislice(patients_to_process, patients_data, con
         _process_one_patient_multislice(
             patient_id=patient_id,
             patient_data=patient_data,
+            config=patient_config
         )
 
 def main():
@@ -68,6 +69,16 @@ def main():
         patient_data=patient_data,
         config=config
     )
+
+    # patients_to_process = []
+    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+    #     for line in file:
+    #         line = line.strip()
+    #         patients_to_process.append(line)
+    # _process_multiple_patient_multislice(
+    #     patients_to_process=patients_to_process,
+    #     patients_data=patients_data
+    # )
 
 if __name__ == "__main__":
     main()
