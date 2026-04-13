@@ -5,6 +5,8 @@ import math
 import yaml
 from copy import deepcopy
 
+import numpy as np
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
@@ -18,6 +20,9 @@ output_dir_names = {
 }
 
 def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
+    thresholds = []
+    scores = []
+    
     for i in range(3):
         config["output_dir_name"] = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, output_dir_names[i])
 
@@ -43,6 +48,22 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             config=config,
             make_output_dir=False
         )
+
+        results_path = os.path.join(config["output_dir_name"], "results.json")
+        with open(results_path, 'r') as f:
+            results = json.load(f)
+        
+        threshold = results["output_data"]["best_threshold"]
+        score = results["postprocessing"][str(threshold)]["total_score"]
+
+        thresholds.append(threshold)
+        scores.append(score)
+
+    thresholds = np.array(thresholds)
+    scores = np.array(scores)
+
+    print(f"Final threshold: {np.sum(((1/scores) * thresholds) / (np.sum(1/scores)))}")
+    
 
 def _process_multiple_patient_multislice(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
