@@ -3,6 +3,7 @@ import sys
 import json
 import math
 import yaml
+from copy import deepcopy
 
 from main import _process_one_patient
 
@@ -43,6 +44,15 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             make_output_dir=False
         )
 
+def _process_multiple_patient_multislice(patients_to_process, patients_data, config):
+    for patient_id in patients_to_process:
+        patient_config = deepcopy(config)
+        print(f"Processing {patient_id}")
+        patient_data = patients_data[patient_id]
+        _process_one_patient_multislice(
+            patient_id=patient_id,
+            patient_data=patient_data,
+        )
 
 def main():
     with open(os.path.join(ROOT_DIR, "config.yaml"), 'r') as f:
