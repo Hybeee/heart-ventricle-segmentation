@@ -24,7 +24,7 @@ def _get_bbox_middle_slice_z(mask):
 
     z_middle = (z_start + z_end) // 2
 
-    return z_middle
+    return (z_start, z_middle, z_end)
 
 def _get_mask_center_of_mass_z(mask):
     slice_counts= mask.sum(axis=(1, 2))
@@ -162,10 +162,21 @@ def preprocess(config: dict,
     output_dir_np = os.path.join(output_dir, "np")
     os.makedirs(output_dir_np, exist_ok=True)
 
-    z_middle = _get_middle_slice(method_type=config["center_method"],
-                                 nnunet_mask=ventricle)
-    if z_middle is None:
-        return
+    z_data = None
+    z_middle = config.get("z_middle", None)
+    if z_middle is None:    
+        z_middle = _get_middle_slice(method_type=config["center_method"],
+                                    nnunet_mask=ventricle)
+        if z_middle is None:
+            return
+        
+        if isinstance(z_middle, tuple):
+            z_start, z_middle, z_end = z_middle
+            z_data = {
+                "start": z_start,
+                "middle": z_middle,
+                "end": z_end
+            }
 
     ct = ct[z_middle, :, :]
     if config["use_filter"]:
@@ -282,6 +293,7 @@ def preprocess(config: dict,
 
     data = {
         "middle_slice_index": z_middle,
+        "z_data": z_data if z_data else "No z_data available",
         "center": center,
         "atrium_data": {
             "start": int(atrium_intervals[0]),

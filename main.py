@@ -175,9 +175,13 @@ def _save_result_json(output_dir, best_threshold, mask_metrics):
     with open(os.path.join(output_dir, "results.json"), 'w') as f:
         json.dump(result_json, f, indent=3)
 
-def _process_one_patient(patient_id: str, patient_data: dict, config: dict):
-    output_dir = os.path.join(ROOT_DIR, config["output_dir_name"], patient_id)
-    os.makedirs(output_dir, exist_ok=True)
+def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
+                         make_output_dir=True):
+    if make_output_dir:
+        output_dir = os.path.join(ROOT_DIR, config["output_dir_name"], patient_id)
+        os.makedirs(output_dir, exist_ok=True)
+    else:
+        output_dir = config["output_dir_name"]
 
     ct_path = patient_data["ct_path"]
     spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)

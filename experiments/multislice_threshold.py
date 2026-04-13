@@ -1,0 +1,63 @@
+import os
+import sys
+import json
+import math
+import yaml
+
+from main import _process_one_patient
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+output_dir_names = {
+    0: "center_output",
+    1: "pos_delta_output",
+    2: "neg_delta_output"
+}
+
+def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
+    for i in range(3):
+        config["output_dir_name"] = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, output_dir_names[i])
+
+        center_output_dir = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, "center_output")
+        if os.path.exists(center_output_dir):
+            center_results_path = os.path.join(center_output_dir, "results.json")
+            with open(center_results_path, 'r') as f:
+                center_results = json.load(f)
+            
+            z_data = center_results["preprocessing"]["z_data"]
+            z_start = z_data["start"]
+            z_middle = z_data["middle"]
+            z_end = z_data["end"]
+
+            multiplier = -1 if i % 2 == 1 else 1
+            delta = max(1, math.ceil((z_end - z_start) / 10))
+            new_z_middle = z_middle + multiplier * delta
+            config["preprocessing"]["z_middle"] = new_z_middle
+
+        _process_one_patient(
+            patient_id=patient_id,
+            patient_data=patient_data,
+            config=config,
+            make_output_dir=False
+        )
+
+
+def main():
+    with open(os.path.join(ROOT_DIR, "config.yaml"), 'r') as f:
+        config = yaml.safe_load(f)
+
+    with open(os.path.join(ROOT_DIR, "patients_data.json"), 'r') as f:
+        patients_data = yaml.safe_load(f)
+
+    patient_id = "patient_0001"
+    patient_data = patients_data[patient_id]
+    _process_one_patient_multislice(
+        patient_id=patient_id,
+        patient_data=patient_data,
+        config=config
+    )
+
+if __name__ == "__main__":
+    main()
