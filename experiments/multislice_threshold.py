@@ -77,7 +77,8 @@ def main():
     #         patients_to_process.append(line)
     # _process_multiple_patient_multislice(
     #     patients_to_process=patients_to_process,
-    #     patients_data=patients_data
+    #     patients_data=patients_data,
+    #     config=config
     # )
 
 if __name__ == "__main__":
