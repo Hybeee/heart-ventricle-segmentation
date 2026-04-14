@@ -67,8 +67,11 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
 
 def _process_multiple_patient_multislice(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
-        patient_config = deepcopy(config)
         print(f"Processing {patient_id}")
+        if patient_id == "patient_0025":
+            continue
+
+        patient_config = deepcopy(config)
         patient_data = patients_data[patient_id]
         _process_one_patient_multislice(
             patient_id=patient_id,

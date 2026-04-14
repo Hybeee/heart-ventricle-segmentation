@@ -200,7 +200,7 @@ def preprocess(config: dict,
             s=0.1,
             c='b'
         )
-        if doc_mask is not None:
+        if doc_mask is not None and len(doc_mask_boundary.shape) == 2:
             plt.scatter(
                 doc_mask_boundary[:, 1],
                 doc_mask_boundary[:, 0],

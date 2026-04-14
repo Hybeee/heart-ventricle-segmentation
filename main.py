@@ -47,7 +47,7 @@ def _save_result_plots(output_dir, threshold):
 
     #region ORIGINAL RESULT WITH MASK BOUNDARY
     plt.imshow(ct, cmap='gray')
-    if doc_mask_b is not None:
+    if doc_mask_b is not None and len(doc_mask_b) == 2:
         plt.scatter(
             doc_mask_b[:, 1],
             doc_mask_b[:, 0],
