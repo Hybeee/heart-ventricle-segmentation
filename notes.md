@@ -116,3 +116,30 @@ Osszefoglalva:
 
 Measuring image noise - "Image Quality Assessment: From Error Visibility to
 Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
+
+# Multi-slice algorithm
+Érdekes esetek:
+- patient_0004
+    - Latszik, hogy az osszeesett maszk score-ja 2x akkora.
+    - Viszont az osszeesett maszk elrontja a kimeneti maszkot is sajnos.
+    - Egyebkent a tobbi szelet is kicsit fura. Lehet, hogy csak szerencsetlen valasztas
+- patient_0005
+    - Erdekes, hogy egy jobbnak latszo maszk score-ja rosszabb, mint egy rosszabbnak latszoe. Ez nem sulyos eset.
+- patient_0006
+    - Hasonlo, mint patient_0005
+- patient_0012
+    - Hasonlo, mint patient_0005, csak picit sulyosabb eset.
+- patient_0014
+    - Hasonlo, mint patient_0005
+    - Kulon erdekes, hogy itt a legjobbnak latszo maszk score-ja lett sokkal magasabb
+- patient_0017
+    - Hasonlo, mint patient_0005
+- patient_0019
+    - Hasonlo, mint patient_0005, talan kicsit sulyosabb
+- patient_0022
+    - Hasonloan jo maszkok, de NAGYON eltero score ertekek
+- patient_0023
+    - Hasonlo, mint patient_0022
+
+# Other
+- patient_0020 streaking artifact, majd detector-ral le kell checkolni
