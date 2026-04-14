@@ -47,7 +47,7 @@ def _save_result_plots(output_dir, threshold):
 
     #region ORIGINAL RESULT WITH MASK BOUNDARY
     plt.imshow(ct, cmap='gray')
-    if doc_mask_b is not None and len(doc_mask_b) == 2:
+    if doc_mask_b is not None and len(doc_mask_b.shape) == 2:
         plt.scatter(
             doc_mask_b[:, 1],
             doc_mask_b[:, 0],
@@ -177,7 +177,7 @@ def _save_result_json(output_dir, best_threshold, mask_metrics):
 
 def _save_3d_mask(config,
                   ct, spacing,
-                  ventricle, ventricle_sitk, 
+                  ventricle, nnunet_mask_sitk, 
                   threshold,
                   doc_mask):
         mask_3d = utils.get_3d_mask(
@@ -188,7 +188,7 @@ def _save_3d_mask(config,
 
         _save_mask_with_reference(
             mask_3d=mask_3d,
-            reference_image=ventricle_sitk,
+            reference_image=nnunet_mask_sitk,
             output_path=os.path.join(config["output_dir_name"], "mask.nii.gz")
         )
 
@@ -203,7 +203,7 @@ def _save_3d_mask(config,
 
         _save_mask_with_reference(
             mask_3d=reconstr_mask,
-            reference_image=ventricle_sitk,
+            reference_image=nnunet_mask_sitk,
             output_path=os.path.join(config["output_dir_name"], "mask_reconstr.nii.gz")
         )
 

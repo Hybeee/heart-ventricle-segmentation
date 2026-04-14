@@ -11,7 +11,8 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from main import _process_one_patient
+from main import _process_one_patient, _save_3d_mask
+import utils
 
 output_dir_names = {
     0: "center_output",
@@ -19,12 +20,51 @@ output_dir_names = {
     2: "neg_delta_output"
 }
 
+def _save_multislice_3d_mask(config, threshold, patient_id, patient_data):
+    ct_path = patient_data["ct_path"]
+    spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
+
+    try:
+        doc_mask_path = patient_data["doc_mask_path"]
+        doc_mask = utils.scan_to_np_array(doc_mask_path)
+        if patient_id == "patient_0001":
+            doc_mask = doc_mask[:, :, :, 3]
+        elif patient_id == "patient_0010":
+            doc_mask = doc_mask[:, :, :, 1]
+            doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
+        elif patient_id == "patient_0053":
+            doc_mask = doc_mask[:, :, :, 2]
+            doc_mask = (doc_mask == 1).astype(doc_mask.dtype)
+        else:
+            doc_mask = doc_mask[:, :, :, 1]
+            doc_mask = (doc_mask == 2).astype(doc_mask.dtype)
+    except Exception as e:
+        print(f"Exception occured during doc mask loading. Setting mask to None.")
+        print(f"Exception: {e}")
+        return
+
+    nnunet_mask_path = patient_data["nnunet_mask_path"]
+    nnunet_mask_sitk, nnunet_mask = utils.scan_to_np_array(nnunet_mask_path, return_sitk=True)
+    ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
+
+    return _save_3d_mask(
+        config=config,
+        ct=ct,
+        spacing=spacing,
+        ventricle=ventricle,
+        nnunet_mask_sitk=nnunet_mask_sitk,
+        threshold=threshold,
+        doc_mask=doc_mask
+    )
+
 def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
     thresholds = []
     scores = []
+    z_slices = {}
+    patient_root = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id)
     
     for i in range(3):
-        config["output_dir_name"] = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, output_dir_names[i])
+        config["output_dir_name"] = os.path.join(patient_root, output_dir_names[i])
 
         center_output_dir = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, "center_output")
         if os.path.exists(center_output_dir) and i != 0:
@@ -37,10 +77,16 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             z_middle = z_data["middle"]
             z_end = z_data["end"]
 
-            multiplier = -1 if i % 2 == 1 else 1
+            multiplier = 1 if i % 2 == 1 else -1
             delta = max(1, math.ceil((z_end - z_start) / 10))
             new_z_middle = z_middle + multiplier * delta
             config["preprocessing"]["z_middle"] = new_z_middle
+
+            z_slices["center"] = z_middle
+            if multiplier == 1:
+                z_slices["positive_delta"] = new_z_middle
+            else:
+                z_slices["negative_delta"] = new_z_middle
 
         _process_one_patient(
             patient_id=patient_id,
@@ -62,8 +108,29 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
     thresholds = np.array(thresholds)
     scores = np.array(scores)
 
-    print(f"Final threshold: {np.sum(((1/scores) * thresholds) / (np.sum(1/scores)))}")
+    final_threshold = np.sum(((1/scores) * thresholds) / (np.sum(1/scores)))
+    print(f"\tFinal threshold: {final_threshold}")
     
+    mask_metrics = {}
+    if config["save_multislice_3d"]:
+        print(f"\tSaving 3D mask of final threshold...")
+        
+        config["output_dir_name"] = patient_root
+        mask_metrics = _save_multislice_3d_mask(
+            config=config,
+            threshold=final_threshold,
+            patient_id=patient_id,
+            patient_data=patient_data
+        )
+
+    results = {}
+    results["final_threshold"] = final_threshold
+    results["slices"] = z_slices
+    
+    results["mask_metrics"] = mask_metrics
+
+    with open(os.path.join(patient_root, "results.json"), 'w') as f:
+        json.dump(results, f, indent=3)
 
 def _process_multiple_patient_multislice(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
