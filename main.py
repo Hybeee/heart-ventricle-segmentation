@@ -175,6 +175,55 @@ def _save_result_json(output_dir, best_threshold, mask_metrics):
     with open(os.path.join(output_dir, "results.json"), 'w') as f:
         json.dump(result_json, f, indent=3)
 
+def _save_3d_mask(config,
+                  ct, spacing,
+                  ventricle, ventricle_sitk, 
+                  threshold,
+                  doc_mask):
+        mask_3d = utils.get_3d_mask(
+            ct=ct,
+            ventricle_mask=ventricle,
+            best_threshold=threshold
+        )
+
+        _save_mask_with_reference(
+            mask_3d=mask_3d,
+            reference_image=ventricle_sitk,
+            output_path=os.path.join(config["output_dir_name"], "mask.nii.gz")
+        )
+
+        if config["verbose"]:
+            print("Starting algorithm")
+        
+        reconstr_mask = utils.remove_segmentation_leakage(
+            arc_mask=mask_3d,
+            pixel_spacing=spacing
+        )
+        reconstr_mask = reconstr_mask.astype(np.uint8)
+
+        _save_mask_with_reference(
+            mask_3d=reconstr_mask,
+            reference_image=ventricle_sitk,
+            output_path=os.path.join(config["output_dir_name"], "mask_reconstr.nii.gz")
+        )
+
+        base_mask_metrics = utils.calculate_mask_metrics(
+            prediction=mask_3d,
+            ground_truth=doc_mask
+        )
+
+        reconstr_mask_metrics = utils.calculate_mask_metrics(
+            prediction=reconstr_mask,
+            ground_truth=doc_mask
+        )
+
+        mask_metrics = {
+            "base_mask": base_mask_metrics,
+            "reconstructed_mask": reconstr_mask_metrics
+        }
+
+        return mask_metrics
+
 def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
                          make_output_dir=True):
     if make_output_dir:
@@ -253,47 +302,15 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
 
     mask_metrics = {}
     if config["postprocessing"]["save_3d_mask"]:
-        mask_3d = postprocessor.get_3d_mask(
+        mask_metrics = _save_3d_mask(
+            config=config,
             ct=ct,
-            ventricle_mask=ventricle,
-            best_threshold=best_threshold
+            spacing=spacing,
+            ventricle=nnunet_mask,
+            ventricle_sitk=nnunet_mask_sitk,
+            threshold=best_threshold,
+            doc_mask=doc_mask
         )
-
-        _save_mask_with_reference(
-            mask_3d=mask_3d,
-            reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(output_dir, "mask.nii.gz")
-        )
-
-        if config["verbose"]:
-            print("Starting algorithm")
-        
-        reconstr_mask = utils.remove_segmentation_leakage(
-            arc_mask=mask_3d,
-            pixel_spacing=spacing
-        )
-        reconstr_mask = reconstr_mask.astype(np.uint8)
-
-        _save_mask_with_reference(
-            mask_3d=reconstr_mask,
-            reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(output_dir, "mask_reconstr.nii.gz")
-        )
-
-        base_mask_metrics = utils.calculate_mask_metrics(
-            prediction=mask_3d,
-            ground_truth=doc_mask
-        )
-
-        reconstr_mask_metrics = utils.calculate_mask_metrics(
-            prediction=reconstr_mask,
-            ground_truth=doc_mask
-        )
-
-        mask_metrics = {
-            "base_mask": base_mask_metrics,
-            "reconstructed_mask": reconstr_mask_metrics
-        }
 
     if config["verbose"]:
         print("Postprocessing finished successfully!")

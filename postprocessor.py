@@ -307,17 +307,6 @@ class PostProcessor():
 
         return best_threshold, result_dict
 
-    def get_3d_mask(self, ct, best_threshold):
-        assert ct.shape == self.input_object.ventricle_mask.shape and len(ct.shape) == 3
-
-        best_threshold = float(best_threshold)
-
-        mask = np.zeros_like(ct)
-        mask[ct > best_threshold] = 1
-        mask[self.input_object.ventricle_mask == 0] = 0
-
-        return mask
-
     def calculate_approximation(self):
         best_threshold, result_dict = self._approximate_best_threshold()
 

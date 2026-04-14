@@ -206,6 +206,17 @@ def plot_valley_data(valley_data: ValleyData, masks: list, mask_labels: list, th
     else:
         plt.show()
 
+def get_3d_mask(ct, best_threshold, ventricle_mask):
+    assert ct.shape == ventricle_mask.shape and len(ct.shape) == 3
+
+    best_threshold = float(best_threshold)
+
+    mask = np.zeros_like(ct)
+    mask[ct > best_threshold] = 1
+    mask[ventricle_mask == 0] = 0
+
+    return mask
+
 def remove_segmentation_leakage(arc_mask, pixel_spacing):
         # fill small holes in the mask (the holes are created by the thresholding step)
         se_8_connectivity = np.zeros((3, 3, 3))
