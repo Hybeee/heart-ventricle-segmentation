@@ -140,6 +140,23 @@ Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
     - Hasonloan jo maszkok, de NAGYON eltero score ertekek
 - patient_0023
     - Hasonlo, mint patient_0022
+- patient_0027
+    - Az egyik nagyon elter a masik kettotol
+- patient_0028/patient_0029
+    - Mindharom nagyon kulonbozo
+- patient_0039
+    - Egyik legfurabb eset, ahol a legjobbnak tuno maszk score-ja a legnagyobb/legrosszabb
+- patient_0041
+    - Mindharom maszk jo, de valamiert az egyiknek 2x annyi a score-ja
+- patient_0044
+    - Hasonloan az egyik maszk eseten a score nagyon kulonbozik/tulsagosan nagy. Fura felvetel, ugyhogy nehezebb a maszkok helyesseget is megallapitani
+- patient_0048
+    - Latszik, hogy legalacsonyabb score -> legszebb szelet -> stabilabb eredmeny.
+    - Az eredmeny threshold ugyanaz, mint a filterek (median, TV) altal javitott esetekben
+- patient_0050
+    - Itt is erdekes, hogy a legjobbnak kinezo maszk score-ja a legnagyobb
 
 # Other
 - patient_0020 streaking artifact, majd detector-ral le kell checkolni (nem detektalja rendesen)
+- Streaking artifact-okhoz erdekesseg: tobb helyen megjelennek, de csak patient_0045 eseten okoznak gondot. Mas esetben - pl. patient_0048 - nem. Ennek a miertje a polar plot-on jol latszik; szimplan elkeruli az nnunet a streaking artifact-ot, a sugar es a maszk boundary metszesenel nincsen extrem gradiens ugras.
+- Multi-slice algoritmushoz megjegyzes: lehet erdemes lenne megnezni nem csak a maszkok minosege es a score-ok kozotti korrelaciot, hanem a threshold ertekek es a score-ok kozotti korrelaciot

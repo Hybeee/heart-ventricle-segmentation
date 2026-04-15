@@ -95,14 +95,15 @@ def _process_data(patient_id, show_plots=False):
 
         smoothed_values = gaussian_filter1d(values, sigma=2, mode='wrap')
 
-        # plt.imshow(grad, cmap='jet')
-        # plt.scatter(
-        #     ventricle_boundary[:, 1],
-        #     ventricle_boundary[:, 0],
-        #     s=2,
-        #     c='blue'
-        # )
-        # plt.show()
+        if show_plots:
+            plt.imshow(grad, cmap='jet')
+            plt.scatter(
+                ventricle_boundary[:, 1],
+                ventricle_boundary[:, 0],
+                s=2,
+                c='blue'
+            )
+            plt.show()
     
         artifact_detector = StreakingArtifactDetector(
             func=smoothed_values,
@@ -127,19 +128,19 @@ def _process_data(patient_id, show_plots=False):
             print("======")
 
 def main():
-    patients_to_process = []
-    with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
-        for line in file:
-            line = line.strip()
-            patients_to_process.append(line)
+    # patients_to_process = []
+    # with open(os.path.join(ROOT_DIR, "patients_to_process.txt"), 'r') as file:
+    #     for line in file:
+    #         line = line.strip()
+    #         patients_to_process.append(line)
 
-    for patient_id in patients_to_process:
-        if patient_id == "patient_0025":
-            continue
-        _process_data(patient_id)
+    # for patient_id in patients_to_process:
+    #     if patient_id == "patient_0025":
+    #         continue
+    #     _process_data(patient_id)
 
-    # patient_id = "patient_0020"
-    # _process_data(patient_id, show_plots=True)
+    patient_id = "patient_0026"
+    _process_data(patient_id, show_plots=True)
 
 if __name__ == "__main__":
     main()
