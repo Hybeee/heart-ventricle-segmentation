@@ -51,12 +51,6 @@ class StreakingArtifactDetector:
 
             z_scores_local[i] = (peak_heights[i] - local_mean) / local_std
 
-            if (peak == 175 or peak == 217 or peak == 183) and self.verbose:
-                print(neighborhood)
-                print(local_mean)
-                print(local_std)
-                print(z_scores_local[i])
-
         artifact_peaks = self.peaks[z_scores_local > 2.0]
 
         artifacts = []
@@ -85,7 +79,7 @@ def _plot_1d_func(values, xlabel, ylabel):
     plt.ylabel(ylabel)
     plt.show()
 
-def _process_data(patient_id):
+def _process_data(patient_id, show_plots=False):
         patient_dir = os.path.join("vis_output", patient_id)
 
         grad_map_path = os.path.join(patient_dir, "preprocessing", "np", "polar_dir_grad.npy")
@@ -116,11 +110,12 @@ def _process_data(patient_id):
         )
         artifacts = artifact_detector.return_artifacts()
 
-        # _plot_1d_func(smoothed_values, "Theta", "Value")
+        if show_plots:
+            _plot_1d_func(smoothed_values, "Theta", "Value")
 
-        deriv = np.diff(smoothed_values, append=smoothed_values[0])
+            deriv = np.diff(smoothed_values, append=smoothed_values[0])
 
-        # _plot_1d_func(deriv, "Theta", "Value")
+            _plot_1d_func(deriv, "Theta", "Value")
 
         if artifacts:
             print(patient_id)
@@ -129,7 +124,7 @@ def _process_data(patient_id):
             print(f"\tStart: {start}")
             print(f"\tPeak: {peak}")
             print(f"\tEnd: {end}")
-            print("\t======")
+            print("======")
 
 def main():
     patients_to_process = []
@@ -143,8 +138,8 @@ def main():
             continue
         _process_data(patient_id)
 
-    # patient_id = "patient_0022"
-    # _process_data(patient_id)
+    # patient_id = "patient_0020"
+    # _process_data(patient_id, show_plots=True)
 
 if __name__ == "__main__":
     main()

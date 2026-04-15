@@ -106,7 +106,7 @@ Osszefoglalva:
     - 48: "javit"
 - Rontott: 
     - 7
-    - 17: ez leet javitas/rontas is
+    - 17: ez lehet javitas/rontas is
     - 28/29: "rontas" - ugyanolyan rossz
     - 34: nnunet-re ratapad, egyik legdurvabb rontas
     - 38
@@ -142,4 +142,4 @@ Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
     - Hasonlo, mint patient_0022
 
 # Other
-- patient_0020 streaking artifact, majd detector-ral le kell checkolni
+- patient_0020 streaking artifact, majd detector-ral le kell checkolni (nem detektalja rendesen)
