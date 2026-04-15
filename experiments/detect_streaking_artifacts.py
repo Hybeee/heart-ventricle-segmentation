@@ -139,7 +139,7 @@ def main():
     #         continue
     #     _process_data(patient_id)
 
-    patient_id = "patient_0026"
+    patient_id = "patient_0045"
     _process_data(patient_id, show_plots=True)
 
 if __name__ == "__main__":

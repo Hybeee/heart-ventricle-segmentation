@@ -155,8 +155,15 @@ Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
     - Az eredmeny threshold ugyanaz, mint a filterek (median, TV) altal javitott esetekben
 - patient_0050
     - Itt is erdekes, hogy a legjobbnak kinezo maszk score-ja a legnagyobb
+- patient_0051
+    - Segit az algoritmus
+
 
 # Other
 - patient_0020 streaking artifact, majd detector-ral le kell checkolni (nem detektalja rendesen)
 - Streaking artifact-okhoz erdekesseg: tobb helyen megjelennek, de csak patient_0045 eseten okoznak gondot. Mas esetben - pl. patient_0048 - nem. Ennek a miertje a polar plot-on jol latszik; szimplan elkeruli az nnunet a streaking artifact-ot, a sugar es a maszk boundary metszesenel nincsen extrem gradiens ugras.
-- Multi-slice algoritmushoz megjegyzes: lehet erdemes lenne megnezni nem csak a maszkok minosege es a score-ok kozotti korrelaciot, hanem a threshold ertekek es a score-ok kozotti korrelaciot
+- Multi-slice algoritmushoz megjegyzes
+    - Lehet erdemes lenne megnezni nem csak a maszkok minosege es a score-ok kozotti korrelaciot, hanem a threshold ertekek es a score-ok kozotti korrelaciot
+    - Erdemes lehet kulonbozo megkozeliteseket megnezni a vegso threshold eloallitasara
+        - sulyozott atlag (most)
+        - minimum score-hoz tartozo threshold (ez szerintem bizonyos esetekben elrontja a megoldast)
