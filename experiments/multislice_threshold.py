@@ -73,53 +73,76 @@ def _save_multislice_3d_mask(config, threshold, patient_id, patient_data):
         doc_mask=doc_mask
     )
 
+def _run_and_get_alg_results(config, patient_id, patient_data):
+    _process_one_patient(
+        patient_id=patient_id,
+        patient_data=patient_data,
+        config=config,
+        make_output_dir=False
+    )
+
+    results_path = os.path.join(config["output_dir_name"], "results.json")
+    with open(results_path, 'r') as f:
+        results = json.load(f)
+
+    return results
+
 def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
     thresholds = []
     scores = []
     z_slices = {}
-    patient_root = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id)
+
+    output_root_dir = config["multislice"]["output_root_dir"]
+    patient_root = os.path.join(ROOT_DIR, output_root_dir, patient_id)
+    config["output_dir_name"] = os.path.join(patient_root, "center_output")
     
-    for i in range(3):
-        config["output_dir_name"] = os.path.join(patient_root, output_dir_names[i])
+    center_results = _run_and_get_alg_results(
+        config=config,
+        patient_id=patient_id,
+        patient_data=patient_data
+    )
 
-        center_output_dir = os.path.join(ROOT_DIR, "threshold_experiment_output", patient_id, "center_output")
-        if os.path.exists(center_output_dir) and i != 0:
-            center_results_path = os.path.join(center_output_dir, "results.json")
-            with open(center_results_path, 'r') as f:
-                center_results = json.load(f)
-            
-            z_data = center_results["preprocessing"]["z_data"]
-            z_start = z_data["start"]
-            z_middle = z_data["middle"]
-            z_end = z_data["end"]
+    center_threshold = center_results["output_data"]["best_threshold"]
+    center_score = center_results["postprocessing"][str(center_threshold)]["total_score"]
+    
+    z_data = center_results["preprocessing"]["z_data"]
+    z_start = z_data["start"]
+    z_middle = z_data["middle"]
+    z_end = z_data["end"]
+    delta = max(1, math.ceil((z_end - z_start) / 10))
 
-            multiplier = 1 if i % 2 == 1 else -1
-            delta = max(1, math.ceil((z_end - z_start) / 10))
-            new_z_middle = z_middle + multiplier * delta
-            config["preprocessing"]["z_middle"] = new_z_middle
+    num_samples = config["multislice"]["num_samples"]
+    raw_slices = np.linspace(z_middle - delta, z_middle + delta, num_samples)
+    target_slices = np.unique(np.round(raw_slices).astype(int))
 
-            z_slices["center"] = z_middle
-            if multiplier == 1:
-                z_slices["positive_delta"] = new_z_middle
-            else:
-                z_slices["negative_delta"] = new_z_middle
+    for z in target_slices:
+        if z == z_middle:
+            thresholds.append(center_threshold)
+            scores.append(center_score)
+            z_slices[str(z)] = {
+                "threshold": center_threshold,
+                "score": center_score
+            }
+            continue
 
-        _process_one_patient(
-            patient_id=patient_id,
-            patient_data=patient_data,
+        config["output_dir_name"] = os.path.join(patient_root, f"slice_{z}")
+        config["preprocessing"]["z_middle"] = int(z)
+
+        results = _run_and_get_alg_results(
             config=config,
-            make_output_dir=False
+            patient_id=patient_id,
+            patient_data=patient_data
         )
 
-        results_path = os.path.join(config["output_dir_name"], "results.json")
-        with open(results_path, 'r') as f:
-            results = json.load(f)
-        
         threshold = results["output_data"]["best_threshold"]
         score = results["postprocessing"][str(threshold)]["total_score"]
 
         thresholds.append(threshold)
         scores.append(score)
+        z_slices[str(z)] = {
+            "threshold": threshold,
+            "score": score
+        }
 
     thresholds = np.array(thresholds)
     scores = np.array(scores)
