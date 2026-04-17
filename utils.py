@@ -318,6 +318,21 @@ def calculate_mask_metrics(prediction, ground_truth):
 
     return result
 
+def get_weighted_median(weights, values):
+    values = np.array(values)
+    weights = np.array(weights)
+
+    sort_indices = np.argsort(values)
+
+    values_sorted = values[sort_indices]
+    weights_sorted = weights[sort_indices]
+
+    cumsum = weights_sorted.cumsum()
+
+    cutoff = weights_sorted.sum() / 2.
+
+    return values_sorted[cumsum >= cutoff][0]
+
 def main():
     import os
     polar_doc_mask = np.load(os.path.join("szaniszlo", "code", "output",

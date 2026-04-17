@@ -20,6 +20,22 @@ output_dir_names = {
     2: "neg_delta_output"
 }
 
+def _get_final_threshold(config, thresholds, scores):
+    method = config["multislice"]["threshold_aggregation_method"]
+
+    weights = 1.0 / scores
+
+    if method == "weighted_mean":
+        return np.sum(weights * thresholds) / np.sum(weights)
+    elif method == "weighted_median":
+        return utils.get_weighted_median(
+            weights=weights,
+            values=thresholds
+        )
+    else:
+        print(f"Unknown threshold aggregation method. Returning first threshold of the list.")
+        return thresholds[0]
+
 def _save_multislice_3d_mask(config, threshold, patient_id, patient_data):
     ct_path = patient_data["ct_path"]
     spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
@@ -108,11 +124,15 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
     thresholds = np.array(thresholds)
     scores = np.array(scores)
 
-    final_threshold = np.sum(((1/scores) * thresholds) / (np.sum(1/scores)))
+    final_threshold = _get_final_threshold(
+        config=config,
+        thresholds=thresholds,
+        scores=scores
+    )
     print(f"\tFinal threshold: {final_threshold}")
     
     mask_metrics = {}
-    if config["save_multislice_3d"]:
+    if config["multislice"]["save_3d"]:
         print(f"\tSaving 3D mask of final threshold...")
         
         config["output_dir_name"] = patient_root
