@@ -232,12 +232,14 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
     else:
         output_dir = config["output_dir_name"]
 
+    print(output_dir)
+
     ct_path = patient_data["ct_path"]
-    spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
+    spacing, ct_sitk, ct = utils.scan_to_np_array(ct_path, return_all=True)
     
     try:
         doc_mask_path = patient_data["doc_mask_path"]
-        doc_mask = utils.scan_to_np_array(doc_mask_path)
+        doc_mask_sitk, doc_mask = utils.scan_to_np_array(doc_mask_path, return_sitk=True)
         if patient_id == "patient_0001":
             doc_mask = doc_mask[:, :, :, 3]
         elif patient_id == "patient_0010":
@@ -302,12 +304,26 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
 
     mask_metrics = {}
     if config["postprocessing"]["save_3d_mask"]:
+        utils.save_data(
+            data=ct,
+            ref_sitk=ct_sitk,
+            output_dir=output_dir,
+            name="ct"
+        )
+
+        utils.save_data(
+            data=doc_mask,
+            ref_sitk=doc_mask_sitk,
+            output_dir=output_dir,
+            name="doc_mask"
+        )
+
         mask_metrics = _save_3d_mask(
             config=config,
             ct=ct,
             spacing=spacing,
-            ventricle=nnunet_mask,
-            ventricle_sitk=nnunet_mask_sitk,
+            ventricle=ventricle,
+            nnunet_mask_sitk=nnunet_mask_sitk,
             threshold=best_threshold,
             doc_mask=doc_mask
         )

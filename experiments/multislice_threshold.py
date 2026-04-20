@@ -36,13 +36,13 @@ def _get_final_threshold(config, thresholds, scores):
         print(f"Unknown threshold aggregation method. Returning first threshold of the list.")
         return thresholds[0]
 
-def _save_multislice_3d_mask(config, threshold, patient_id, patient_data):
+def _save_multislice_3d(config, threshold, patient_id, patient_data):
     ct_path = patient_data["ct_path"]
-    spacing, ct = utils.scan_to_np_array(ct_path, return_spacing=True)
+    spacing, ct_sitk, ct = utils.scan_to_np_array(ct_path, return_all=True)
 
     try:
         doc_mask_path = patient_data["doc_mask_path"]
-        doc_mask = utils.scan_to_np_array(doc_mask_path)
+        doc_mask_sitk, doc_mask = utils.scan_to_np_array(doc_mask_path, return_sitk=True)
         if patient_id == "patient_0001":
             doc_mask = doc_mask[:, :, :, 3]
         elif patient_id == "patient_0010":
@@ -62,6 +62,22 @@ def _save_multislice_3d_mask(config, threshold, patient_id, patient_data):
     nnunet_mask_path = patient_data["nnunet_mask_path"]
     nnunet_mask_sitk, nnunet_mask = utils.scan_to_np_array(nnunet_mask_path, return_sitk=True)
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
+
+    if config["multislice"]["save_ct_and_doc_mask"]:
+        output_dir = config["output_dir_name"]
+        utils.save_data(
+            data=ct,
+            ref_sitk=ct_sitk,
+            output_dir=output_dir,
+            name="ct"
+        )
+
+        utils.save_data(
+            data=doc_mask,
+            ref_sitk=doc_mask_sitk,
+            output_dir=output_dir,
+            name="doc_mask"
+        )
 
     return _save_3d_mask(
         config=config,
@@ -159,7 +175,7 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
         print(f"\tSaving 3D mask of final threshold...")
         
         config["output_dir_name"] = patient_root
-        mask_metrics = _save_multislice_3d_mask(
+        mask_metrics = _save_multislice_3d(
             config=config,
             threshold=final_threshold,
             patient_id=patient_id,

@@ -13,7 +13,7 @@ from postprocessor import ValleyData
 
 import os
 
-def scan_to_np_array(scan_path, return_sitk=False, return_spacing=False):
+def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spacing=False):
     """
     Returns the read scan in the following shape: (z, y, x).
     """
@@ -26,13 +26,24 @@ def scan_to_np_array(scan_path, return_sitk=False, return_spacing=False):
     spacing = spacing[::-1]
     scan = sitk.GetArrayFromImage(orig_scan)
 
-    if return_sitk:
+    if return_all:
+        return spacing, orig_scan, scan
+    elif return_sitk:
         return orig_scan, scan
     elif return_spacing:
         return spacing, scan
     else:
         return scan
-    
+
+def save_data(data, ref_sitk, output_dir, name):
+    img = sitk.GetImageFromArray(data)
+
+    img.SetSpacing(ref_sitk.GetSpacing())
+    img.SetDirection(ref_sitk.GetDirection())
+    img.SetOrigin(ref_sitk.GetOrigin())
+
+    sitk.WriteImage(img, os.path.join(output_dir, f"{name}.nii.gz"))
+
 def create_and_save_lung_mask(patient_data, output_dir):
     input_img = nib.load(patient_data["ct_path"])
     output_img = totalsegmentator(input=input_img, task="total", verbose=False)
