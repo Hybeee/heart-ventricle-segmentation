@@ -104,6 +104,7 @@ def _run_and_get_alg_results(config, patient_id, patient_data):
     return results
 
 def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
+    print(f"Processing {patient_id}")
     thresholds = []
     scores = []
     z_slices = {}
@@ -193,7 +194,6 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
 
 def _process_multiple_patient_multislice(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
-        print(f"Processing {patient_id}")
         if patient_id == "patient_0025":
             continue
 
