@@ -232,7 +232,7 @@ def _process_one_patient(patient_id: str, patient_data: dict, config: dict,
     else:
         output_dir = config["output_dir_name"]
 
-    print(output_dir)
+    config["output_dir_name"] = output_dir
 
     ct_path = patient_data["ct_path"]
     spacing, ct_sitk, ct = utils.scan_to_np_array(ct_path, return_all=True)
