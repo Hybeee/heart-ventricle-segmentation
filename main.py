@@ -6,6 +6,7 @@ import os
 import yaml
 import shutil
 import json
+from copy import deepcopy
 
 import utils
 import preprocessor
@@ -353,10 +354,11 @@ def _process_multiple_patients(patients_to_process, patients_data, config):
     for patient_id in patients_to_process:
         print(f"Processing {patient_id}")
         patient_data = patients_data[patient_id]
+        patient_config = deepcopy(config)
         _process_one_patient(
             patient_id=patient_id,
             patient_data=patient_data,
-            config=config
+            config=patient_config
         )
 
 def main():

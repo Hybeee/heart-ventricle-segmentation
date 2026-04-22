@@ -212,3 +212,5 @@ __marimo__/
 patients_data.json
 config.yaml
 patients_to_process.txt
+copy_remote_output_to_local.py
+3d_mask_experiments
