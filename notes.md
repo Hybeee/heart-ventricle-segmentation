@@ -167,3 +167,105 @@ Structural Similarity": https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf
     - Erdemes lehet kulonbozo megkozeliteseket megnezni a vegso threshold eloallitasara
         - sulyozott atlag (most)
         - minimum score-hoz tartozo threshold (ez szerintem bizonyos esetekben elrontja a megoldast)
+
+# 3D masks
+## patient_0001
+mindharom maszk fele jo, de ugyanaz a problema elojon alul, illetve felul. Megallapithato, hogy a reconstr maszk a legjobb.
+
+Megjegyzes: Maszk sokszor (relativ ertelemben) kicsit sokat valtozik ket szelett kozott, -260.6250mm-nel ket szelett kozott figyelheto meg. Valszeg a rekonstr alg.-ot kell finomitani.
+
+alul:
+![patient_0001_lower](notes_data/patient_0001_lower.png)
+
+felul
+![patient_0001_upper](notes_data/patient_0001_upper.png)
+
+## patient_0002
+alul:
+normal maszk rossz - mindketto.
+w_mean es w_med kb. hasonlo, jo eredmenyeket produkalnak. Viszont, minden esetben lyukacsos a maszk a zaj miatt -> dilatacio?
+Egyik vegben meg kis pontok vannak a maszkban -> erozio/helyes reconstr alg megoldja
+
+Mindharom esetben latszik, hogy kell meg a reconstr algot kicsit pofozni. Itt segitett a multislice alg.
+
+Alja: (erdekesebb, tetejen csak a lyukacsossag figyelheto meg, egyebken u.a. mint 1-es esetben)
+![patient_0002_lower](notes_data/patient_0002_lower.png)
+
+## patient_0003
+szinte tokeletesek a maszkok mindharom modszer eseteben, nem jon fel alul/felul problema. Latszik, hogy a reconstr alg. itt segit -> a sima/nyers maszk jelentosen rosszabb, vannak pl. "kinyulasai"
+
+## patient_0004
+mindharom maszk jo, de
+- streaking artifact elrontja -> ezzel nem sok mindent lehet kezdeni
+- az algoritmus (patient_0002-hoz hasonloan) felremegy, kell elotte egy dilatacio
+
+streaking:
+![patient_0004_streaking](notes_data/patient_0004_streaking.png)
+
+alul, illetve felul hasonlo a jellemzo, mint 1-es eseteben. illetve lehet, hogy kellene pl erozio majd dilatacio amiatt, ami alul, illetve felul van:
+
+alul
+![patient_0004_lower](notes_data/patient_0004_lower.png)
+
+felul
+![patient_0004_upper](notes_data/patient_0004_upper.png)
+
+## patient_0005
+streaking itt is problema:
+
+![patient_0005_streaking](notes_data/patient_0005_streaking.png)
+
+egyeshez hasonloan itt is van olyan, hogy a reconstr maszk valtozgat szomszedos szeletek kozott -> alg finomitasa kell
+
+egyebkent mindharom maszk jo es alul/felul nincs problema
+
+## patient_0006
+a normal algoritmus maszkja kicsit 'darabos', de nem a dilatacio hianya miatt - emiatt egyebkent a reconstr maszk is szetmegy:
+
+![patient_0006_norm](notes_data/patient_0006_norm.png)
+
+Mindharom algoritmusnak ez egyebkent problemat okoz. A felvetellel kb ez magyarazhato:
+
+![patient_0006_ct](notes_data/patient_0006_ct.png)
+
+Itt viszont alul/felul nincs az elsonel tett megfigyeles!
+
+## patient_0007
+alul egy kicsit problemas, de egyebkent a maszkok jok/ugyanaz a megfigyeles, mint a tobbinel:
+
+![patient_0007_lower](notes_data/patient_0007_lower.png)
+
+## patient_0008
+Nincs alul/felul baj. A maszkok jol neznek ki. Egyedul a reconstr maszk 'villogasa' figyelheto meg, de az majd az alg. modositasaval kikuszobolheto lesz
+
+## patient_0009
+4-eshez hasonlo also, 1-eshez hasonlo felso, de egyebkent mindharom maszk jonak nez ki
+
+## patient_0010
+ranezesre mindharom maszk jo. Ami rossz, az mar az elozoekben megjelent. Itt is kellett volna dilatacio a kimeneti maszkon a reconstr alg. alkalmazasa elott.
+
+## patient_0011
+a maszkok kb ugyanazok. A dilatacio itt is segitene, illetve van egy fura resze:
+![patient_0011_data](notes_data/patient_0011_data.png)
+
+A rendes felvetelen kevesbe latszik a kontraszt, de lathatoan lefedi a magasabb kontrasztu reszt a maszk
+
+## patient_0012
+az alja/teteje mar latott.
+a maszkok mindegyike jonak nez ki.
+itt is latszik hogy a reconstr alg. finomhangolasa szukseges
+
+## patient_0013
+eleve zajos felvetel, de ugy nez ki mintha mindharom maszk egesz jol szegmentalna. Itt is kelleni fog dilatacio. Erdekes modon a rekonstrualt maszk nem esik szet, pedig az eredeti, kimeneti maszk lyukas.
+
+## patient_0014
+az eleje/vege mar olyan, ami elojott (pl. patient_0004/patient_0001). Egyebkent az egyetlen problema itt is az, hogy 'villog' a rekonstrualt maszk.
+
+Egyebkent mindharom maszk jol szegmental
+
+## patient_0015
+mindharom maszk jo, az alja, illetve a teteje is jo, de:
+kellene dilatacio, mert az eredeti maszk lyukacsos.
+
+Az aljan, illetve a tetejen kellene erozio, mert impulzus zaj-szeru a maszk:
+![patient_0015_erosion](notes_data/patient_0015_erosion.png)
