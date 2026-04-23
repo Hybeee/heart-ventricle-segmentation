@@ -269,3 +269,33 @@ kellene dilatacio, mert az eredeti maszk lyukacsos.
 
 Az aljan, illetve a tetejen kellene erozio, mert impulzus zaj-szeru a maszk:
 ![patient_0015_erosion](notes_data/patient_0015_erosion.png)
+
+## patient_0016
+mindharom maszk jo!
+
+a teteje hasonlo, mint az egyes esetnek, also resszel nincsen gond
+
+itt is problemas a rekonstrualt maszk bizonyos helyeken -> lazan kotott, de szerintem hozza tartozo resz eltunik -> piros vonal = GT maszk
+![patient_0016_loose](notes_data/patient_0016_loose.png)
+
+## patient_0017
+talan egy picit alulszegmental itt az algoritmus, de az aljan pl erdekes:
+
+![patient_0017_interesting](notes_data/patient_0017_interesting.png)
+
+megjegyzes: a CT kevesbe kontrasztos
+
+## patient_0018
+mindharom maszk jo. Latszik, hogy az algoritmus finomitasa kell, hogy a final mask jo legyen. Illetve felul itt is latszik, hogy szukseg lehet eroziora
+
+## patient_0019
+itt is kb ugyanaz allapithato meg. Illetve a kovetkezo kep miatt erdemes lehet ranezni rendesen:
+
+![patient_0019_interesting](notes_data/patient_0019_interesting.png)
+
+## patient_0020
+Alapvetoen mindharom maszk jo. Itt is latszik, hogy szukseg lesz a reconstr. algoritmus finomhangolasa/atirasa.
+
+Erdekesseg, hogy az nnU-Net rosszul szegmental. Ez kikuszobolheto a postprocessing algoritmussal:
+
+![patient_0020_nnunet](notes_data/patient_0020_nnunet.png)
