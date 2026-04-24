@@ -299,3 +299,137 @@ Alapvetoen mindharom maszk jo. Itt is latszik, hogy szukseg lesz a reconstr. alg
 Erdekesseg, hogy az nnU-Net rosszul szegmental. Ez kikuszobolheto a postprocessing algoritmussal:
 
 ![patient_0020_nnunet](notes_data/patient_0020_nnunet.png)
+
+## patient_0021
+mindharom maszk ugyanolyan
+
+Alul impulzus zaj-szeruek a maszkok, bar ezt reszben kezeli a rekonstr alg.
+
+Erdekes ezenkivul:
+![patient_0021_data](notes_data/patient_0021_data.png)
+
+## patient_0022
+A maszkok alja hasonlo patient_0002-hoz
+
+A maszkok egyebkent kb. ugyanolyanok, viszont itt is latszik, hogy finomitani kell az algoritmust!
+
+## patient_0023
+Erre erdemes lehet kulon ranezni, nehez megmondani, hogy eleve mi a jo maszk/az orvose jo-e
+
+![patient_0023_interesting](notes_data/patient_0023_interesting.png)
+
+## patient_0024
+Mindharom maszk rendes, illetve reconstr. valtozata is teljesen jo. Egyedul a tetejen erdekes egy kicsit, de azt leszamitva jo!
+
+![patient_0024_upper](notes_data/patient_0024_upper.png)
+
+## patient_0026
+Mindharom maszk mindket valtozata tokeletes. Erdekesseg, hogy itt latszik a streaking artifact minimalis hatasa - maszk alakja jo, de a sugar (streaking artifact szempontjabol) iranyaban van lyuk a maszkban:
+
+![patient_0026_streaking](notes_data/patient_0026_streaking.png)
+
+## patient_0027
+jok a maszkok. Az aljak jok - foleg rendes postprocessing-el -, mig a teteje a teteje patient_0001-hez hasonlit.
+
+## patient_0028
+Alapvetoen rosszabb felvetel. Kozepen kb. jok a maszkok (a "weighted mean" modszer alulszegmental kicsit), viszont felul kicsit problemas a helyzet:
+
+![patient_0028_problem](notes_data/patient_0028_problem.png)
+
+## patient_0029
+Duplikalt felvetel, ugyanaz, mint patient_0028
+
+## patient_0030
+Gyakorlatilag tokeletes felvetel mindharom maszk szempontjabol.
+
+## patient_0031
+Erosen latszik, hogy itt segit a multislice algoritmus. A multislice-os maszkok eseten mar szep az eredmeny. Talan a teteje erdekes lehet:
+
+![patient_0031_upper](notes_data/patient_0031_upper.png)
+
+## patient_0032
+Mindharom maszk jo. A teteje patient_0001-re hasonlit. Az aljan eredekes, valszeg a reconstr. alg. javitasaval kikuszobolheto:
+
+![patient_0032_lower](notes_data/patient_0032_lower.png)
+
+## patient_0033
+Ugyanaz, mint patient_0032 (nem pontosan, "mintha kisebb lenne a felbontas"). Megtalalt eredmenyek ertelmeben viszont ugyanaz, igy az elozo allitasok ervenyesek.
+
+## patient_0034
+Rosszabb minosegu felvetel, kb. impulzus zaj-szeru maszk -> a reconstr. maszk emiatt szetesik. Viszont rendes algoritmussal szerintem jol neznenek ki a maszkok (vagy pl. csak egy erozio majd dilatacio a reconstr. alg. elott). Emellett mintha a multislice alg.-ok kicsit jobb threshold-ot hataroznanak meg (285/286 vs. 297)
+
+## patient_0035
+Mindharom maszk ugyanolyan, viszont az impulzus zaj-szeru maszk hasonloan lathato itt is, mint az elozo felvetel eseten. Az eredeti/postprocessing elotti maszk latszolag jol hatarolja korba az orvosi/GT maszkot (az egyeb zaj akorul egy gyenge erozioval pl. eltuntetheto lenne). ->  reconstr. alg. megvaltoztatasa kell.
+
+## patient_0036
+Alapvetoen mindharom maszk jo, de itt is erdekes, hogy mit lehet a kovetkezovel tenni:
+
+![patient_0036_interesting](notes_data/patient_0036_interesting.png)
+
+## patient_0037
+Mindharom maszk tokeletes. Viszont itt is latszik, hogy javitani kell a reconstr. algoritmuson. A maszk bizonyos helyeken 'villog' - (ket szomszedos szelet eseten nagyobb regio benne van majd nincs majd megint benne van)
+
+## patient_0038
+Impulzus zaj-szeru maszkok, amik jol lefedik az orvosi/GT maszkot, de emiatt a rekonstr. maszk felremegy.
+
+## patient_0039
+ugyanaz figyelheto meg, mint elobb
+
+## patient_0040
+Alapvetoen mindharom maszk - reconstr.-okkal egyutt - jo, de erdekes lehet ez majd a finomhangolt algoritmus szamara:
+
+![patient_0040_interesting](notes_data/patient_0040_interesting.png)
+
+## patient_0041
+Itt is jok a maszkok a stabil szeleteken, viszont van itt is erdekesseg:
+
+![patient_0041_interesting](notes_data/patient_0041_interesting.png)
+![patient_0041_interesting_raw](notes_data/patient_0041_interesting_raw.png)
+
+## patient_0042
+Alapvetoen ugyanaz allapithato meg, mint patient_0038-nal. Viszont pluszban, felul lehet, hogy a GT maszk rossz?
+
+![patient_0042_badgt](notes_data/patient_0042_badgt.png)
+
+## patient_0043
+Zajos maszkok (impulzus) itt is. Viszont erdekes, hogy pontosan fedik az orvosi maszkot az nnU-Net-en belul:
+
+![patient_0043_interesting](notes_data/patient_0043_interesting.png)
+
+Emellett mintha kicsit tulszegmentalnanak az algoritmus altal eloallitott maszkok.
+
+## patient_0044
+Hasznalhatatlan a GT maszk sajnos. Egyebkent a maszkok nem tunnek rossznak.
+
+## patient_0045
+Itt van a nagyon durva streaking artifact. Erdekes, hogy az alap maszkok mindenhol jok. Viszont, mind az alap, mind a rekonstr. maszkja az eredeti algoritmusnak rosszabb -> sokkal lyukacsosabb a streaking miatt, ami elrontja a postprocesselt maszkot is. Ezzel szemben a multislice esetben olyan threshold-ot talal meg az algoritmus, ami ez ellen robusztusabb. A streaking itt kevesbe rontja el a maszkokat. Erdekes megfigyelni azt is, ahogy a streaking artifact vegigvonul az axialis szeleten es magaval huzza a maszkot.
+
+## patient_0046
+Zajos maszkok. Erdekes, hogy az eredeti tulszegmental(? legalabbis a jobb kamra iranyaba biztos), viszont a rekonstr. az gyakorlatilag tokeletes:
+
+![patient_0046_interesting](notes_data/patient_0046_interesting.png)
+
+## patient_0047
+Itt is mindharom maszk gyakorlatilag tokeletes, viszont itt is megfigyelheto a reconstr. maszk "villogasa".
+
+## patient_0048
+A multislice maszkok tokeletesek, a normal nem a legjobb. Itt is van egy eros streaking artifact, ez rontja el a normal maszkok. Ahol nincsen streaking, ott a normal is nagyjabol jo - talan egy kicsit lyukas. A normal algoritmus eleve egyebkent sokkal magasabb threshold-ot talalt meg (288/290 vs 389)
+
+## patient_0049
+Lyukas maszk a normal alg. eseteben gondot okoz (reconst. maszknal foleg). A masik ket, multislice esetben a maszkok nagyon jok. A teteje kb. olyan, mint patient_0001 eseteben.
+
+## patient_0050
+Alapvetoen mindharom modszer jo, a normal es a weighted mean mintha kicsit alulszegmentalna, a weighted median jobb.
+
+## patient_0051
+A stabil szeleteken mindharom modszer jo, azt leszamitva, hogy a maszkok lyukacsosak, ezzel pedig a reconstr. maszk is szetmegy. Illetve erdekes, hogy alul, illetve felul a kovetkezo tortenik:
+
+![patient_0051_interesting](notes_data/patient_0051_interesting.png)
+
+Megjegyzes: A felvetel eleve nem tul kontrasztos.
+
+## patient_0052
+Mindharom modszer nagyon jo. Viszont itt is latszik, hogy finomitani kell a reconstr. algoritmust; a postprocessing elotti maszk mindharom esetben nagyon jol lefedi a GT maszkot, viszont a postprocessing utan eloallo maszk sokszor kisebb lesz/reszek leszakadnak="villog"
+
+## patient_0053
+A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt is megfigyelheto, hogy szomszedos szeleteken a reconstr. maszk "villog" -> finomhangolni kell az algoritmust
