@@ -210,6 +210,10 @@ alul
 felul
 ![patient_0004_upper](notes_data/patient_0004_upper.png)
 
+Erdekesseg: a maszk lyukacsossaga - ez egyebkent tobb helyen fordul elo -, a kovetkezo 3D-s maszkot eredmenyezi:
+
+![patient_0004_3d](notes_data/patient_0004_3d.png)
+
 ## patient_0005
 streaking itt is problema:
 
@@ -223,6 +227,7 @@ egyebkent mindharom maszk jo es alul/felul nincs problema
 a normal algoritmus maszkja kicsit 'darabos', de nem a dilatacio hianya miatt - emiatt egyebkent a reconstr maszk is szetmegy:
 
 ![patient_0006_norm](notes_data/patient_0006_norm.png)
+![patient_0006_reconstr](notes_data/patient_0006_reconstr.png)
 
 Mindharom algoritmusnak ez egyebkent problemat okoz. A felvetellel kb ez magyarazhato:
 
@@ -329,7 +334,7 @@ Mindharom maszk mindket valtozata tokeletes. Erdekesseg, hogy itt latszik a stre
 ![patient_0026_streaking](notes_data/patient_0026_streaking.png)
 
 ## patient_0027
-jok a maszkok. Az aljak jok - foleg rendes postprocessing-el -, mig a teteje a teteje patient_0001-hez hasonlit.
+jok a maszkok. Az aljak jok - foleg rendes postprocessing-el -, mig a teteje patient_0001-hez hasonlit.
 
 ## patient_0028
 Alapvetoen rosszabb felvetel. Kozepen kb. jok a maszkok (a "weighted mean" modszer alulszegmental kicsit), viszont felul kicsit problemas a helyzet:
@@ -359,7 +364,7 @@ Ugyanaz, mint patient_0032 (nem pontosan, "mintha kisebb lenne a felbontas"). Me
 Rosszabb minosegu felvetel, kb. impulzus zaj-szeru maszk -> a reconstr. maszk emiatt szetesik. Viszont rendes algoritmussal szerintem jol neznenek ki a maszkok (vagy pl. csak egy erozio majd dilatacio a reconstr. alg. elott). Emellett mintha a multislice alg.-ok kicsit jobb threshold-ot hataroznanak meg (285/286 vs. 297)
 
 ## patient_0035
-Mindharom maszk ugyanolyan, viszont az impulzus zaj-szeru maszk hasonloan lathato itt is, mint az elozo felvetel eseten. Az eredeti/postprocessing elotti maszk latszolag jol hatarolja korba az orvosi/GT maszkot (az egyeb zaj akorul egy gyenge erozioval pl. eltuntetheto lenne). ->  reconstr. alg. megvaltoztatasa kell.
+Mindharom maszk ugyanolyan, viszont az impulzus zaj-szeru maszk hasonloan lathato itt is, mint az elozo felvetel eseten. Az eredeti/postprocessing elotti maszk latszolag jol hatarolja korbe az orvosi/GT maszkot (az egyeb zaj akorul egy gyenge erozioval pl. eltuntetheto lenne). ->  reconstr. alg. megvaltoztatasa kell.
 
 ## patient_0036
 Alapvetoen mindharom maszk jo, de itt is erdekes, hogy mit lehet a kovetkezovel tenni:
@@ -413,7 +418,7 @@ Zajos maszkok. Erdekes, hogy az eredeti tulszegmental(? legalabbis a jobb kamra 
 Itt is mindharom maszk gyakorlatilag tokeletes, viszont itt is megfigyelheto a reconstr. maszk "villogasa".
 
 ## patient_0048
-A multislice maszkok tokeletesek, a normal nem a legjobb. Itt is van egy eros streaking artifact, ez rontja el a normal maszkok. Ahol nincsen streaking, ott a normal is nagyjabol jo - talan egy kicsit lyukas. A normal algoritmus eleve egyebkent sokkal magasabb threshold-ot talalt meg (288/290 vs 389)
+A multislice maszkok tokeletesek, a normal nem a legjobb. Itt is van egy eros streaking artifact, ez rontja el a normal maszkot. Ahol nincsen streaking, ott a normal is nagyjabol jo - talan egy kicsit lyukas. A normal algoritmus eleve egyebkent sokkal magasabb threshold-ot talalt meg (288/290 vs 389)
 
 ## patient_0049
 Lyukas maszk a normal alg. eseteben gondot okoz (reconst. maszknal foleg). A masik ket, multislice esetben a maszkok nagyon jok. A teteje kb. olyan, mint patient_0001 eseteben.
@@ -422,7 +427,7 @@ Lyukas maszk a normal alg. eseteben gondot okoz (reconst. maszknal foleg). A mas
 Alapvetoen mindharom modszer jo, a normal es a weighted mean mintha kicsit alulszegmentalna, a weighted median jobb.
 
 ## patient_0051
-A stabil szeleteken mindharom modszer jo, azt leszamitva, hogy a maszkok lyukacsosak, ezzel pedig a reconstr. maszk is szetmegy. Illetve erdekes, hogy alul, illetve felul a kovetkezo tortenik:
+A stabil szeleteken mindharom modszer jo, azt leszamitva, hogy a maszkok lyukacsosak, ezzel pedig a reconstr. maszk is szetmegy. Illetve erdekes, hogy alul, illetve felul a kovetkezo tortenik (zajossag):
 
 ![patient_0051_interesting](notes_data/patient_0051_interesting.png)
 
