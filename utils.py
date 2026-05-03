@@ -310,6 +310,102 @@ def remove_segmentation_leakage(arc_mask, pixel_spacing):
                                                                          arc_mask_imfilled)])
         return arc_mask_reconstructed
 
+def remove_segmentation_leakage_3d(mask, pixel_spacing):
+    print("Starting 3D segmentation removal...")
+
+    se_26_connectivity = np.ones((3, 3, 3))
+    connected_components, _ = ndimage.label(~mask, se_26_connectivity)
+    
+    unique_values, values_counts = np.unique(connected_components, return_counts=True)
+    pixel_volume = np.prod(pixel_spacing)
+    
+    big_hole_indices = unique_values[values_counts > (2.5**3/pixel_volume)]
+    mask_imfilled = ~np.isin(connected_components, big_hole_indices) | mask
+
+    mask_dt = ndimage.distance_transform_edt(mask_imfilled, sampling=pixel_spacing)
+
+    diam_z = round(4 / pixel_spacing[0])
+    diam_z = diam_z - diam_z % 2 + 1
+    rz = diam_z // 2
+    cz = rz
+
+    diam_y = round(4 / pixel_spacing[1])
+    diam_y = diam_y - diam_y % 2 + 1
+    ry = diam_y // 2
+    cy = ry
+
+    diam_x = round(4 / pixel_spacing[2])
+    diam_x = diam_x - diam_x % 2 + 1
+    rx = diam_x // 2
+    cx = rx
+
+    structure = np.zeros((diam_z, diam_y, diam_x), dtype=bool)
+
+    zz, yy, xx = np.ogrid[:diam_z, :diam_y, :diam_x]
+
+    structure = ((zz - cz) / rz)**2 + ((yy - cy) / ry)**2 + ((xx - cx) / rx)**2 <= 1
+
+    dilated_dt = ndimage.grey_dilation(
+        mask_dt,
+        footprint=structure
+    )
+
+    dt_max_value = dilated_dt.max()
+
+    dt_seed_mask = (
+        np.isclose(dilated_dt, mask_dt, rtol=0, atol=0.5)
+        & (mask_dt > 0)
+        & (mask_dt > dt_max_value * 0.5)
+    )
+
+    seed_points = np.stack(dt_seed_mask.nonzero()).T
+    n_points = np.stack(se_26_connectivity.nonzero()).T
+    n_points -= 1
+    neighbors_d = n_points[np.any(n_points != [0, 0, 0], axis=1)]
+
+    new_points = seed_points
+    marching_state = np.zeros_like(mask_dt)
+    marching_state[tuple(new_points.T)] = mask_dt[tuple(new_points.T)]
+    new_points_neighbors = new_points[:, None, :] + neighbors_d[None, ...]
+    new_points = new_points_neighbors.reshape((-1, 3))
+
+    while len(new_points) > 0:
+        new_points = np.unique(new_points, axis=0)
+        neighbors = new_points[:, None, :] + neighbors_d[None, ...]
+        current_seed_vals = marching_state[tuple(new_points.T)]
+        neighbour_vals = marching_state[tuple(np.moveaxis(neighbors, 2, 0))]
+        current_seed_dt_vals = mask_dt[tuple(new_points.T)]
+        marching_state[tuple(new_points.T)] = np.maximum(current_seed_vals,
+                                                         np.minimum(current_seed_dt_vals,
+                                                                    neighbour_vals.max(axis=-1)))
+        changed_points = marching_state[tuple(new_points.T)] != current_seed_vals
+        new_points_changed = new_points[changed_points]
+        changed_points_neighbors = new_points_changed[:, None, :] + neighbors_d[None, ...]
+        new_points = changed_points_neighbors.reshape((-1, 3))
+
+    se = np.ones((3, 3, 3))
+    march_erosion = ndimage.grey_erosion(
+        marching_state,
+        footprint=se
+    )
+    island_mask = (np.isclose(marching_state, march_erosion, rtol=0, atol=0.5)
+                   & (marching_state > 0))
+    
+    max_connection_half_width = 2.22
+    n_erosions_needed = np.max((island_mask & (marching_state < max_connection_half_width))
+                               * marching_state)
+    
+    reconstruction_base = marching_state > n_erosions_needed
+
+    mask_reconstructed = ndimage.binary_propagation(
+        input=reconstruction_base,
+        mask=mask_imfilled,
+        structure=np.ones((3, 3, 3))
+    )
+
+    return mask_reconstructed
+
+
 def calculate_mask_metrics(prediction, ground_truth):
     assert prediction.shape == ground_truth.shape
 
