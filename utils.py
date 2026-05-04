@@ -397,10 +397,17 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
     
     reconstruction_base = marching_state > n_erosions_needed
 
-    mask_reconstructed = ndimage.binary_propagation(
+    rad_z = max(1, int(round(n_erosions_needed / pixel_spacing[0])))
+    rad_y = max(1, int(round(n_erosions_needed / pixel_spacing[1])))
+    rad_x = max(1, int(round(n_erosions_needed / pixel_spacing[2])))
+
+    z, y, x = np.ogrid[-rad_z:rad_z+1, -rad_y:rad_y+1, -rad_x:rad_x+1]
+    dilation_sphere = (z/rad_z)**2 + (y/rad_y)**2 + (x/rad_x)**2 <= 1
+
+    mask_reconstructed = ndimage.binary_dilation(
         input=reconstruction_base,
-        mask=mask_imfilled,
-        structure=np.ones((3, 3, 3))
+        structure=dilation_sphere,
+        mask=mask_imfilled
     )
 
     return mask_reconstructed

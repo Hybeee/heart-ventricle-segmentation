@@ -196,8 +196,8 @@ def _save_3d_mask(config,
         if config["verbose"]:
             print("Starting algorithm")
         
-        reconstr_mask = utils.remove_segmentation_leakage(
-            arc_mask=mask_3d,
+        reconstr_mask = utils.remove_segmentation_leakage_3d(
+            mask=mask_3d,
             pixel_spacing=spacing
         )
         reconstr_mask = reconstr_mask.astype(np.uint8)
