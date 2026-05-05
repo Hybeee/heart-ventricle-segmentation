@@ -438,3 +438,8 @@ Mindharom modszer nagyon jo. Viszont itt is latszik, hogy finomitani kell a reco
 
 ## patient_0053
 A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt is megfigyelheto, hogy szomszedos szeleteken a reconstr. maszk "villog" -> finomhangolni kell az algoritmust
+
+# 3D masks - 3D reconstruction algorithm
+- patient_0006-nal tovabbra is alulszegmental a megoldas
+- patient_0007 -> talan feljebb kene venni az egyik kuszobot, de amugy jo
+- patient_0010, kicsit alulszegmental, szivizom miatt lehet ez foleg erdekes?
