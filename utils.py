@@ -313,6 +313,8 @@ def remove_segmentation_leakage(arc_mask, pixel_spacing):
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
 
+    mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3)))
+
     se_26_connectivity = np.ones((3, 3, 3))
     connected_components, _ = ndimage.label(~mask, se_26_connectivity)
     
