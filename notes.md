@@ -442,4 +442,16 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 # 3D masks - 3D reconstruction algorithm
 - patient_0006-nal tovabbra is alulszegmental a megoldas
 - patient_0007 -> talan feljebb kene venni az egyik kuszobot, de amugy jo
-- patient_0010, kicsit alulszegmental, szivizom miatt lehet ez foleg erdekes?
+- patient_0010 -> kicsit alulszegmental, szivizom miatt lehet ez foleg erdekes?
+- patient_0011 -> feljebb kell kicsit venni a hidas threshold-ot, itt is van egy kicsi leak
+- patient_0013 -> erdekes, de lehet megoldja az impulzuszajbol fakado problemat?
+- patient_0019 -> az eredeti megoldas se a legjobb, igy a reconstr se. De amiert lett irva, azt jol elvegzi itt is!
+- patient_0023 -> erdekes, hogy egy nagyon nagyon kicsi leakage, ami nagyon vekony uttal van osszekotve nem tunt el az algoritmus hatasara?
+- patient_0028/patient_0029 -> ezek is szebbek lettek!
+- patient_0031 -> tulszegmentalas talan? nehez eldonteni
+- patient_0034 -> alapvetoen is rossz a zajossag miatt az eredmeny, de a reconstr alg. javit a maszkon!
+- patient_0036 -> talan kicsit tulszegmental
+- patient_0042 -> valamiert itt is kicsit felremegy az algoritmus, majd meg kell nezni, hogy miert. Otlet: erozio utan largest connected component megtartasa es abbol dilatalas. A 3D-s volume-ot nezve ott mehet felre. Plusz lehet az n_erosions_needed rosszul szamolodik ki valamiert?
+- patient_0046 erdekes lehet! Az alap GT maszk is rossz/lyukacsos, emiatt itt nehezebb kiertekelni, bar szerintem jo a vegso maszk.
+- patient_0051 -> itt is elojon, hogy kicsit magasabb threshold kellene a vastagsagot illetoen
+- 

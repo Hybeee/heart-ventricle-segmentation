@@ -328,17 +328,17 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
 
     diam_z = round(4 / pixel_spacing[0])
     diam_z = diam_z - diam_z % 2 + 1
-    rz = diam_z // 2
+    rz = max(1, diam_z // 2)
     cz = rz
 
     diam_y = round(4 / pixel_spacing[1])
     diam_y = diam_y - diam_y % 2 + 1
-    ry = diam_y // 2
+    ry = max(1, diam_y // 2)
     cy = ry
 
     diam_x = round(4 / pixel_spacing[2])
     diam_x = diam_x - diam_x % 2 + 1
-    rx = diam_x // 2
+    rx = max(1, diam_x // 2)
     cx = rx
 
     structure = np.zeros((diam_z, diam_y, diam_x), dtype=bool)
