@@ -454,4 +454,3 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 - patient_0042 -> valamiert itt is kicsit felremegy az algoritmus, majd meg kell nezni, hogy miert. Otlet: erozio utan largest connected component megtartasa es abbol dilatalas. A 3D-s volume-ot nezve ott mehet felre. Plusz lehet az n_erosions_needed rosszul szamolodik ki valamiert?
 - patient_0046 erdekes lehet! Az alap GT maszk is rossz/lyukacsos, emiatt itt nehezebb kiertekelni, bar szerintem jo a vegso maszk.
 - patient_0051 -> itt is elojon, hogy kicsit magasabb threshold kellene a vastagsagot illetoen
-- 

@@ -310,6 +310,18 @@ def remove_segmentation_leakage(arc_mask, pixel_spacing):
                                                                          arc_mask_imfilled)])
         return arc_mask_reconstructed
 
+def filter_dt_seed_mask(dt_seed_mask):
+    labeled_seeds, num_seed_clusters = ndimage.label(dt_seed_mask, structure=np.ones((3, 3, 3)))
+
+    if num_seed_clusters > 1:
+        seed_cluster_sizes = np.bincount(labeled_seeds.ravel())
+        seed_cluster_sizes[0] = 0
+
+        largest_seed_label = seed_cluster_sizes.argmax()
+        dt_seed_mask = (labeled_seeds == largest_seed_label)
+    
+    return dt_seed_mask
+
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
 
@@ -359,6 +371,7 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
         & (mask_dt > 0)
         & (mask_dt > dt_max_value * 0.5)
     )
+    dt_seed_mask = filter_dt_seed_mask(dt_seed_mask=dt_seed_mask)
 
     seed_points = np.stack(dt_seed_mask.nonzero()).T
     n_points = np.stack(se_26_connectivity.nonzero()).T
