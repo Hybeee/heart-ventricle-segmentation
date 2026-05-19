@@ -454,3 +454,18 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 - patient_0042 -> valamiert itt is kicsit felremegy az algoritmus, majd meg kell nezni, hogy miert. Otlet: erozio utan largest connected component megtartasa es abbol dilatalas. A 3D-s volume-ot nezve ott mehet felre. Plusz lehet az n_erosions_needed rosszul szamolodik ki valamiert?
 - patient_0046 erdekes lehet! Az alap GT maszk is rossz/lyukacsos, emiatt itt nehezebb kiertekelni, bar szerintem jo a vegso maszk.
 - patient_0051 -> itt is elojon, hogy kicsit magasabb threshold kellene a vastagsagot illetoen
+
+# kovi konzira erdekesek:
+- patient_0004: a streaking miatt.
+- patient_0006: itt a megtalalt threshold rosszabb.
+- patient_0007: erdekes leak? miert nem szedi ki? todo otlet: tul kicsi leak -> nem lesz belole island
+- patient_0011: van leak, szerintem itt a vastagsag miatt nem vagta le
+- patient_0019: alulszegmentalas
+- patient_0023: mini leakage, talan ugyanazon okbol, mint 0007?
+- patient_0026: itt is van mini leak, de eltunik. erdemes osszehasonlitani az algoritmus mukodeset pl. 23-mal.
+- patient_0031: itt is van egy kicsi leak, de ezt ranezesre a threshold novelese megoldja
+- patient_0032: nincs hozzakotve a leak, de eltunik. csak ellenorzes miatt meg kene nezni, hogy miert tunik el. otlet: marching state vegig 0 ott.
+- patient_0041: hasonloan, mint patient_0026-nal
+- patient_0045: van-e erozio? szerintem nem, de a ket maszk meg kicsiket mas
+- patient_0051: itt is van egy kicsi leak es ezt is valoszinuleg a threshold novelese megoldja majd
+- patient_0053: ugyanaz, mint patient_0045-nel
