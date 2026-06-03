@@ -456,16 +456,23 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 - patient_0051 -> itt is elojon, hogy kicsit magasabb threshold kellene a vastagsagot illetoen
 
 # kovi konzira erdekesek:
-- patient_0004: a streaking miatt.
-- patient_0006: itt a megtalalt threshold rosszabb.
 - patient_0007: erdekes leak? miert nem szedi ki? todo otlet: tul kicsi leak -> nem lesz belole island
+    - erdekes az imfilled maszk
+    - nem detektal island-et. Szerintem azert, mert nem eleg vastag a leak?
 - patient_0011: van leak, szerintem itt a vastagsag miatt nem vagta le
+    - ugyanaz a problema, mint 0007-nel
 - patient_0019: alulszegmentalas
 - patient_0023: mini leakage, talan ugyanazon okbol, mint 0007?
+    - mint 0007-nel
 - patient_0026: itt is van mini leak, de eltunik. erdemes osszehasonlitani az algoritmus mukodeset pl. 23-mal.
+    - nem tunik vastagnak a leak, megis eltunik es rendesen detektal szigeteket az alg.. ugyanakkor erdekesen nez ki az island mask, mintha a korvonala lenne a maszknak
 - patient_0031: itt is van egy kicsi leak, de ezt ranezesre a threshold novelese megoldja
-- patient_0032: nincs hozzakotve a leak, de eltunik. csak ellenorzes miatt meg kene nezni, hogy miert tunik el. otlet: marching state vegig 0 ott.
+    - megoldja a threshold novelese
+    - de az island mask sum 1...
 - patient_0041: hasonloan, mint patient_0026-nal
+    - 2.22-vel jo, de 3.5-tel mar tul sokat vag le.
 - patient_0045: van-e erozio? szerintem nem, de a ket maszk meg kicsiket mas
+    - Megoldas: Nagyobb az erozio, mint 0. Szoval van (helyesen) -> mas a ket maszk.
 - patient_0051: itt is van egy kicsi leak es ezt is valoszinuleg a threshold novelese megoldja majd
 - patient_0053: ugyanaz, mint patient_0045-nel
+    - ugyanaz a helyzet -> igazabol van minimalis leak valahol
