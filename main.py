@@ -140,6 +140,7 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
         color = "0.0 1.0 0.0"
 
     mask_sitk.SetMetaData("Segmentation_MasterRepresentation", "Binary labelmap")
+    mask_sitk.SetMetaData("Segment0_LabelValue", "1")
     mask_sitk.SetMetaData("SlicerLabelMap", "1")
     mask_sitk.SetMetaData("Segment0_Color", color)
 
