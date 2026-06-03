@@ -137,7 +137,7 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
     mask_sitk.SetDirection(reference_image.GetDirection())
 
     if color is None:
-        color = "0.0 1.0 0.0"
+        color = "0.35 0.75 0.45"
         
     mask_sitk.SetMetaData("Segmentation_MasterRepresentation", "Binary labelmap")
     mask_sitk.SetMetaData("Segmentation_ContainedRepresentationNames", "Binary labelmap|")
@@ -204,7 +204,7 @@ def _save_3d_mask(config,
             mask_3d=mask_3d,
             reference_image=nnunet_mask_sitk,
             output_path=os.path.join(config["output_dir_name"], "mask.seg.nrrd"),
-            color="0.0 1.0 0.0",
+            color="0.35 0.75 0.45",
             segment_name="mask"
         )
 
@@ -221,7 +221,7 @@ def _save_3d_mask(config,
             mask_3d=reconstr_mask,
             reference_image=nnunet_mask_sitk,
             output_path=os.path.join(config["output_dir_name"], "final_mask.seg.nrrd"),
-            color="0.0 0.0 1.0",
+            color="0.25 0.55 0.90",
             segment_name="final_mask"
         )
 

@@ -35,7 +35,7 @@ def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spac
     else:
         return scan
 
-def save_data(data, ref_sitk, output_dir, name, is_mask=False, color=None, segment_name="mask"):
+def save_data(data, ref_sitk, output_dir, name, is_mask=False, color="0.35 0.75 0.45", segment_name="mask"):
     img = sitk.GetImageFromArray(data)
 
     img.SetSpacing(ref_sitk.GetSpacing())
