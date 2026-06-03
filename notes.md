@@ -476,3 +476,12 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 - patient_0051: itt is van egy kicsi leak es ezt is valoszinuleg a threshold novelese megoldja majd
 - patient_0053: ugyanaz, mint patient_0045-nel
     - ugyanaz a helyzet -> igazabol van minimalis leak valahol
+
+
+\chapter{Adatvizsgálat és módszertani előkészítés}
+
+Az adatok vizsgálata több szempontból is fontos szerepet játszott a munka során. Egyrészt lehetővé tette annak meghatározását, hogy a rendelkezésre álló adatok milyen arányban tekinthetők megfelelő, illetve nem megfelelő minőségűnek. A minőség ebben az esetben mind a CT-felvételek, mind az azokhoz tartozó maszkok minőségére vonatkozik. Előbbi az algoritmus működését befolyásolja, például szükségessé tehet további előfeldolgozási lépések bevezetését vagy speciális esetek kezelését. Utóbbi az algoritmussal kapcsolatos hipotézisek kialakítását, valamint a kiértékelési folyamatot is befolyásolja, különösen akkor, ha az approximált maszkot az eredeti maszkhoz viszonyítjuk.
+
+Másrészt a CT-felvételek és a rendelkezésre álló maszkok szisztematikus vizsgálata elősegítette olyan heurisztikák megfogalmazását, amelyek támogatják az implementált algoritmus működését.
+
+Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket mutatom be, amelyek hozzájárultak a végső algoritmus megtervezéséhez, illetve amelyek egy része később az algoritmus részeként is felhasználásra került.
