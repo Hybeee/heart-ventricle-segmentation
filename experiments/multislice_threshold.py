@@ -78,7 +78,8 @@ def _save_multislice_3d(config, threshold, patient_id, patient_data):
             output_dir=output_dir,
             name="doc_mask",
             is_mask=True,
-            color="1.0 0.0 0.0"
+            color="1.0 0.0 0.0",
+            segment_name="doc_mask"
         )
 
     return _save_3d_mask(
