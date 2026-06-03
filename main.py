@@ -129,12 +129,18 @@ def _save_result_plots(output_dir, threshold):
     plt.close()
     #endregion
 
-def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, output_path: str):
+def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, output_path: str, color=None):
     mask_sitk = sitk.GetImageFromArray(mask_3d.astype(np.uint8))
     
     mask_sitk.SetSpacing(reference_image.GetSpacing())
     mask_sitk.SetOrigin(reference_image.GetOrigin())
     mask_sitk.SetDirection(reference_image.GetDirection())
+
+    if color is None:
+        color = "0.0 1.0 0.0"
+
+    mask_sitk.SetMetaData("SlicerLabelMap", "1")
+    mask_sitk.SetMetaData("Segment0_Color", color)
 
     sitk.WriteImage(mask_sitk, output_path)
 
@@ -190,7 +196,8 @@ def _save_3d_mask(config,
         _save_mask_with_reference(
             mask_3d=mask_3d,
             reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(config["output_dir_name"], "mask.nii.gz")
+            output_path=os.path.join(config["output_dir_name"], "mask.nii.gz"),
+            color="0.0 1.0 0.0"
         )
 
         if config["verbose"]:
@@ -205,7 +212,8 @@ def _save_3d_mask(config,
         _save_mask_with_reference(
             mask_3d=reconstr_mask,
             reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(config["output_dir_name"], "mask_reconstr.nii.gz")
+            output_path=os.path.join(config["output_dir_name"], "mask_reconstr.nii.gz"),
+            color="0.0 0.0 1.0"
         )
 
         base_mask_metrics = utils.calculate_mask_metrics(

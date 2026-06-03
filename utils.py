@@ -35,12 +35,18 @@ def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spac
     else:
         return scan
 
-def save_data(data, ref_sitk, output_dir, name):
+def save_data(data, ref_sitk, output_dir, name, is_mask=False, color=None):
     img = sitk.GetImageFromArray(data)
 
     img.SetSpacing(ref_sitk.GetSpacing())
     img.SetDirection(ref_sitk.GetDirection())
     img.SetOrigin(ref_sitk.GetOrigin())
+
+    if is_mask:
+        img.SetMetaData("SlicerLabelMap", "1")
+        img.SetMetaData("Segment0_Color", color)
+        img.SetMetaData("Segment0_Name", name.capitalize())
+        img.SetMetaData("Segment0_ID", name.lower())
 
     sitk.WriteImage(img, os.path.join(output_dir, f"{name}.nii.gz"))
 
@@ -398,9 +404,15 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
         changed_points_neighbors = new_points_changed[:, None, :] + neighbors_d[None, ...]
         new_points = changed_points_neighbors.reshape((-1, 3))
 
+    modified_ms = np.where(
+        marching_state > 0,
+        marching_state,
+        dt_max_value * 10
+    )
+
     se = np.ones((3, 3, 3))
     march_erosion = ndimage.grey_erosion(
-        marching_state,
+        modified_ms,
         footprint=se
     )
     island_mask = (np.isclose(marching_state, march_erosion, rtol=0, atol=0.5)
