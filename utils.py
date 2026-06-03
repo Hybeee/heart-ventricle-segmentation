@@ -67,7 +67,7 @@ def save_data(data, ref_sitk, output_dir, name, is_mask=False, color="0.35 0.75 
             extent_str = f"{x_min} {x_max} {y_min} {y_max} {z_min} {z_max}"
         else:
             extent_str = "0 0 0 0 0 0"
-        mask_sitk.SetMetaData("Segment0_Extent", extent_str)
+        img.SetMetaData("Segment0_Extent", extent_str)
 
     sitk.WriteImage(img, os.path.join(output_dir, f"{name}.{ext}"), useCompression=use_compression)
 
