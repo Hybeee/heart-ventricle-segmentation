@@ -196,7 +196,7 @@ def _save_3d_mask(config,
         _save_mask_with_reference(
             mask_3d=mask_3d,
             reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(config["output_dir_name"], "mask.nii.gz"),
+            output_path=os.path.join(config["output_dir_name"], "mask.seg.nrrd"),
             color="0.0 1.0 0.0"
         )
 
@@ -212,7 +212,7 @@ def _save_3d_mask(config,
         _save_mask_with_reference(
             mask_3d=reconstr_mask,
             reference_image=nnunet_mask_sitk,
-            output_path=os.path.join(config["output_dir_name"], "mask_reconstr.nii.gz"),
+            output_path=os.path.join(config["output_dir_name"], "mask_reconstr.seg.nrrd"),
             color="0.0 0.0 1.0"
         )
 
