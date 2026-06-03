@@ -43,12 +43,14 @@ def save_data(data, ref_sitk, output_dir, name, is_mask=False, color=None):
     img.SetOrigin(ref_sitk.GetOrigin())
 
     ext = "seg.nrrd" if is_mask else "nii.gz"
+    use_compression = is_mask
 
     if is_mask:
+        img.SetMetaData("Segmentation_MasterRepresentation", "Binary labelmap")
         img.SetMetaData("SlicerLabelMap", "1")
         img.SetMetaData("Segment0_Color", color)
 
-    sitk.WriteImage(img, os.path.join(output_dir, f"{name}.{ext}"))
+    sitk.WriteImage(img, os.path.join(output_dir, f"{name}.{ext}"), useCompression=use_compression)
 
 def create_and_save_lung_mask(patient_data, output_dir):
     input_img = nib.load(patient_data["ct_path"])

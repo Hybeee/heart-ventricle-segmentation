@@ -139,10 +139,11 @@ def _save_mask_with_reference(mask_3d: np.ndarray, reference_image: sitk.Image, 
     if color is None:
         color = "0.0 1.0 0.0"
 
+    mask_sitk.SetMetaData("Segmentation_MasterRepresentation", "Binary labelmap")
     mask_sitk.SetMetaData("SlicerLabelMap", "1")
     mask_sitk.SetMetaData("Segment0_Color", color)
 
-    sitk.WriteImage(mask_sitk, output_path)
+    sitk.WriteImage(mask_sitk, output_path, useCompression=True)
 
 
 def _save_result_json(output_dir, best_threshold, mask_metrics):
