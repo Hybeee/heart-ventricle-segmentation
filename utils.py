@@ -59,7 +59,6 @@ def save_data(data, ref_sitk, output_dir, name, is_mask=False, color="0.35 0.75 
         non_zero_indices = np.nonzero(data)
     
         if len(non_zero_indices[0]) > 0:
-            # Numpy arrays are ordered (Z, Y, X)
             z_min, z_max = np.min(non_zero_indices[0]), np.max(non_zero_indices[0])
             y_min, y_max = np.min(non_zero_indices[1]), np.max(non_zero_indices[1])
             x_min, x_max = np.min(non_zero_indices[2]), np.max(non_zero_indices[2])
