@@ -485,3 +485,77 @@ Az adatok vizsgálata több szempontból is fontos szerepet játszott a munka so
 Másrészt a CT-felvételek és a rendelkezésre álló maszkok szisztematikus vizsgálata elősegítette olyan heurisztikák megfogalmazását, amelyek támogatják az implementált algoritmus működését.
 
 Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket mutatom be, amelyek hozzájárultak a végső algoritmus megtervezéséhez, illetve amelyek egy része később az algoritmus részeként is felhasználásra került.
+
+# island detection with marching_state[background] = 1000
+- patient_0001: ok
+    - Megjegyzes: egy reszet a hidnak a visszadilatalas felnagyitja, de ez meg nem tunik bajnak a 3D modellben.
+- patient_0002: ok
+    - Megjegyzes: ugyanaz, mint patient_0001
+- patient_0003: ok
+    - Megjegyzes: n_erosions = 1, de a visszadilatalas itt nem rontja el, szep a maszk.
+- patient_0004: teljesen jo
+    - Megjegyzes: streaking artifact itt beleront a maszkokba, de ez pl a GT-n is latszik. Szelettol fuggoen a GT/prediktalt maszk robusztusabb.
+- patient_0005: ok
+- patient_0006: talan itt megy egyedul felre a javito algoritmus
+    - Megjegyzes: nem az island detektalasok hibaja igazabol, bar TODO hogy miert.
+- patient_0007: ok
+    - Megjegyzes: a hid egy resze itt is marad. TODO: osszevetni az 'increasing path'-es otlet eredmenyevel
+- patient_0008: ok
+    - Megjegyzes: a base fele van egy-ket szelet, ahol a patient_0006-hoz hasonloan eltavolitodik a maszk egy resze, de a 3D-s modell pedig jo
+- patient_0009: ok
+- patient_0010: alapvetoen szerintem itt a felveteje hibaja miatt van baj. A szivizmok reszei (?) 3D-s modellen nyitottak.
+- patient_0011: alapvetoen egy MININIMALIS leak van, az valamiert nem kerul le, le kell checkolni TODO
+    - Megjegyzes: ezenkivul ok, de az aljanal az alap maszk is alulszegmental (? szerintem nem, gt maszk rossz)
+- patient_0012: ok
+- patient_0013: zajos CT, kimegy a masik oldali kamraig. Egyebkent nem rossz az eredmeny - a masik kamraig valo kinyulast leszamitva.
+- patient_0014: ok
+- patient_0015: zajos CT (~patient_0013), de amugy ok
+- patient_0016: ok
+    - Megjegyzes: ~1 voxellel alulszegmental 
+- patient_0017: ok
+- patient_0018: ok
+- patient_0019: eredeti felvetel meh, fura a kontrasztos resz, emiatt az algo elhasal
+    - Megjegyzes: nem a postproc hibaja
+- patient_0020: alapvetoen ok
+    - Megjegyzes: vannak hasonlo reszek, mint patient_0006-nal
+- patient_0021: zajos CT, mindharom megoldas rossz.
+    - Megjegyzes: javit valamennyit a postproc alg.
+- patient_0022: ok, de egyebkent eleve rossz az orvos? mintha a jobb kamra lenne kontrasztos?
+    - Megjegyzes: enyhen alulszegmentalja mindket maszk az orvoset.
+- patient_0023: rossz kontraszt miatt alulszegmentalas?
+    - Megjegyzes: alg jo.
+- patient_0024: ok
+    - Megjegyzes: elojon a szivizmos dolog, illetve itt is egy kicsit a hidba beleszegmentalas tortenik. de egyaltalan nem rossz az eredmeny 3D modell!
+- patient_0026: ok
+- patient_0027: ok
+- patient_0028: ok
+    - Megjegyzes: itt nincs leak, csak egy kicsi, viszont az ahhoz tartozo hid picit itt is benne van
+- patient_0029: ekvivalens patient_0028-cal
+- patient_0030: ok
+- patient_0031: itt elbukik. szerintem tul vastag a leak. 3D-s modellnel rosszabbul nez ki a hiba, mint axialis szeletek eseten
+- patient_0032: ok
+- patient_0033: ekvivalens patient_0032-vel
+- patient_0034: mindharom maszk rossz a felvetel minosege miatt
+    - Megjegyzes: hidas dolog itt is problemas!
+- patient_0035: ok - zajos felvetel, de jo szerintem eleve is a (vegso) maszk
+- patient_0036: zajos az eredeti kimenet, nem tudom eldonteni, hogy ott egy leak van-e vagy sem
+    - Megjegyzes: viszont a postproc felnagyitja azt a reszt, de a 3D-s modell nem nez ki rosszul.
+- patient_0037: ok
+- patient_0038: ok
+    - Megjegyzes: zajos kimeneti maszk
+- patient_0039: ok
+- patient_0040: ok
+- patient_0041: ok
+- patient_0042: tul vastag hid az eredetiben, szerintem az a baj de TODO check
+- patient_0043: zajos felvetel, zajos orvosi es base maszk, de az utofeldolgozott eredmeny jonak tunik, talan tulsagosan kinyulik a masik kamra fele?
+- patient_0044: rossz gt maszk, de mukodik az algo
+- patient_0045: ok
+- patient_0046: ugyanaz, mint patient_0043, vagy akar patient_0013
+- patient_0047: mini alulszegmentalas? algo jo
+- patient_0048: ok
+- patient_0049: ok
+- patient_0050: kicsi alulszegmentalas, de algo jo, illetve inkabb szerintem az gt maszk szegmental tul
+- patient_0051: ok
+- patient_0052: ok
+- patient_0053: ok
+    - Megjegyzes: orvosi maszk alulszegmental
