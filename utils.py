@@ -384,7 +384,8 @@ def get_reachable_mask(marching_state, seed_points, neighbors_d):
                 reachable[nb] = True
                 heapq.heappush(heap, (-nb_val, nb))
         
-        return reachable
+    
+    return reachable
 
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
