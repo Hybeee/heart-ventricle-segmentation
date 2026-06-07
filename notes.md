@@ -525,14 +525,14 @@ Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket muta
 - patient_0023: rossz kontraszt miatt alulszegmentalas?
     - Megjegyzes: alg jo.
 - patient_0024: ok
-    - Megjegyzes: elojon a szivizmos dolog, illetve itt is egy kicsit a hidba beleszegmentalas tortenik. de egyaltalan nem rossz az eredmeny 3D modell!
+    - Megjegyzes: elojon a szivizmos dolog, illetve itt is egy kicsit a hidba beleszegmentalas tortenik. de egyaltalan nem rossz az eredmeny 3D modell! -> szivizmos dolog = patient_0006-nal -> bizonyos kinovesei az eredeti maszknak lemetszodnek -> dilatacio mar nem allitja vissza.
 - patient_0026: ok
 - patient_0027: ok
 - patient_0028: ok
     - Megjegyzes: itt nincs leak, csak egy kicsi, viszont az ahhoz tartozo hid picit itt is benne van
 - patient_0029: ekvivalens patient_0028-cal
 - patient_0030: ok
-- patient_0031: itt elbukik. szerintem tul vastag a leak. 3D-s modellnel rosszabbul nez ki a hiba, mint axialis szeletek eseten
+- patient_0031: itt elbukik. szerintem tul vastag a leak. 3D-s modellnel rosszabbul nez ki a hiba, mint axialis szeletek eseten -> ellenorzes TODO
 - patient_0032: ok
 - patient_0033: ekvivalens patient_0032-vel
 - patient_0034: mindharom maszk rossz a felvetel minosege miatt
@@ -559,3 +559,10 @@ Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket muta
 - patient_0052: ok
 - patient_0053: ok
     - Megjegyzes: orvosi maszk alulszegmental
+
+## TODO-k
+- Hid felnagyitasa
+    - Megfigyeles: a mostani algoritmus felnagyitja a hidak/leak-ek egy reszet. 
+    - Kerdes: A megirt algoritmus, ami az eredmeny maszkot a 'non-increasing path' modon allitja elo mennyire produkal mas maszkokat (ott is megfigyelheto volt ez a jelenseg.)
+    - Eredmenyek:
+        - valamiert - meg mindig - bennemaradt egy fontos resz a kodban: az elejen egy dilatacio, ami miatt a hidak vastagodnak es igy benne maradnak. le kell ujra tesztelni, de ez elmeleti szinten megoldja az osszes ilyen problemat.

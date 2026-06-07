@@ -224,7 +224,7 @@ def _save_3d_mask(config,
         if config["verbose"]:
             print("Starting algorithm")
         
-        reconstr_mask = utils.remove_segmentation_leakage_3d(
+        reconstr_mask, reconstr_mask_nip = utils.remove_segmentation_leakage_3d(
             mask=mask_3d,
             pixel_spacing=spacing
         )
@@ -236,6 +236,13 @@ def _save_3d_mask(config,
             output_path=os.path.join(config["output_dir_name"], "final_mask.seg.nrrd"),
             color="0.25 0.55 0.90",
             segment_name="final_mask"
+        )
+        _save_mask_with_reference(
+            mask_3d=reconstr_mask_nip,
+            reference_image=nnunet_mask_sitk,
+            output_path=os.path.join(config["output_dir_name"], "final_mask_nip.seg.nrrd"),
+            color="1.0 0.95 0.4",
+            segment_name="final_mask_nip"
         )
 
         base_mask_metrics = utils.calculate_mask_metrics(

@@ -8,6 +8,7 @@ from skimage import measure
 import SimpleITK as sitk
 import nibabel as nib
 from totalsegmentator.python_api import totalsegmentator
+import heapq
 
 from postprocessor import ValleyData
 
@@ -348,10 +349,47 @@ def filter_dt_seed_mask(dt_seed_mask):
     
     return dt_seed_mask
 
+def get_reachable_mask(marching_state, seed_points, neighbors_d):
+    reachable = np.zeros(marching_state.shape, dtype=bool)
+    heap = []
+    
+    for seed in seed_points:
+        seed = tuple(seed)
+        if not reachable[seed]:
+            reachable[seed] = True
+            heapq.heappush(heap, (-marching_state[seed], seed))
+    
+    while heap:
+        neg_val, pos = heapq.heappop(heap)
+        val = -neg_val
+
+        z, y, x = pos
+        for dz, dy, dx in neighbors_d:
+            nb = tuple([z+dz, y+dy, x+dx])
+            if not(
+                0 <= nb[0] < marching_state.shape[0] and
+                0 <= nb[1] < marching_state.shape[1] and
+                0 <= nb[2] < marching_state.shape[2]
+            ):
+                continue
+
+            if reachable[nb]:
+                continue
+
+            nb_val = marching_state[nb]
+
+            allowed = nb_val < val and nb_val > 0
+
+            if allowed:
+                reachable[nb] = True
+                heapq.heappush(heap, (-nb_val, nb))
+        
+        return reachable
+
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
 
-    mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3)))
+    # mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3))) # unneccesary but will leave this here for a while
 
     se_26_connectivity = np.ones((3, 3, 3))
     connected_components, _ = ndimage.label(~mask, se_26_connectivity)
@@ -457,7 +495,14 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
         mask=mask_imfilled
     )
 
-    return mask_reconstructed
+    reachable_mask = get_reachable_mask(
+        marching_state=marching_state,
+        seed_points=seed_points,
+        neighbors_d=neighbors_d
+    )
+    mask_reconstructed_nip = reconstruction_base | reachable_mask
+
+    return mask_reconstructed, mask_reconstructed_nip
 
 
 def calculate_mask_metrics(prediction, ground_truth):
