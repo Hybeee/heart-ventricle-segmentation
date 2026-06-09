@@ -337,6 +337,15 @@ def remove_segmentation_leakage(arc_mask, pixel_spacing):
                                                                          arc_mask_imfilled)])
         return arc_mask_reconstructed
 
+def fill_internal_tunnels(mask):
+    se = np.ones((3, 3, 3))
+
+    mask_closed = ndimage.binary_closing(mask, structure=se)
+    mask_closed_eroded = ndimage.binary_erosion(mask_closed, structure=se)
+    mask_filled = mask | mask_closed_eroded
+
+    return mask_filled
+
 def filter_dt_seed_mask(dt_seed_mask):
     labeled_seeds, num_seed_clusters = ndimage.label(dt_seed_mask, structure=np.ones((3, 3, 3)))
 
@@ -389,7 +398,11 @@ def get_reachable_mask(marching_state, seed_points, neighbors_d):
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
 
+    # reason behind closing: masks that have tunnels inside them instead of holes
+    # e.g.: patient_0004 -> unique_values = [1]
     # mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3))) # unneccesary but will leave this here for a while
+    # new alternative:
+    mask = fill_internal_tunnels(mask=mask)
 
     se_26_connectivity = np.ones((3, 3, 3))
     connected_components, _ = ndimage.label(~mask, se_26_connectivity)

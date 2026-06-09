@@ -477,18 +477,8 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
 - patient_0053: ugyanaz, mint patient_0045-nel
     - ugyanaz a helyzet -> igazabol van minimalis leak valahol
 
-
-\chapter{Adatvizsgálat és módszertani előkészítés}
-
-Az adatok vizsgálata több szempontból is fontos szerepet játszott a munka során. Egyrészt lehetővé tette annak meghatározását, hogy a rendelkezésre álló adatok milyen arányban tekinthetők megfelelő, illetve nem megfelelő minőségűnek. A minőség ebben az esetben mind a CT-felvételek, mind az azokhoz tartozó maszkok minőségére vonatkozik. Előbbi az algoritmus működését befolyásolja, például szükségessé tehet további előfeldolgozási lépések bevezetését vagy speciális esetek kezelését. Utóbbi az algoritmussal kapcsolatos hipotézisek kialakítását, valamint a kiértékelési folyamatot is befolyásolja, különösen akkor, ha az approximált maszkot az eredeti maszkhoz viszonyítjuk.
-
-Másrészt a CT-felvételek és a rendelkezésre álló maszkok szisztematikus vizsgálata elősegítette olyan heurisztikák megfogalmazását, amelyek támogatják az implementált algoritmus működését.
-
-Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket mutatom be, amelyek hozzájárultak a végső algoritmus megtervezéséhez, illetve amelyek egy része később az algoritmus részeként is felhasználásra került.
-
 # island detection with marching_state[background] = 1000
 - patient_0001: ok
-    - Megjegyzes: egy reszet a hidnak a visszadilatalas felnagyitja, de ez meg nem tunik bajnak a 3D modellben.
 - patient_0002: ok
     - Megjegyzes: ugyanaz, mint patient_0001
 - patient_0003: ok
@@ -499,7 +489,6 @@ Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket muta
 - patient_0006: talan itt megy egyedul felre a javito algoritmus
     - Megjegyzes: nem az island detektalasok hibaja igazabol, bar TODO hogy miert.
 - patient_0007: ok
-    - Megjegyzes: a hid egy resze itt is marad. TODO: osszevetni az 'increasing path'-es otlet eredmenyevel
 - patient_0008: ok
     - Megjegyzes: a base fele van egy-ket szelet, ahol a patient_0006-hoz hasonloan eltavolitodik a maszk egy resze, de a 3D-s modell pedig jo
 - patient_0009: ok
@@ -566,3 +555,10 @@ Ebben a fejezetben azokat az adatelemzési és előkészítési lépéseket muta
     - Kerdes: A megirt algoritmus, ami az eredmeny maszkot a 'non-increasing path' modon allitja elo mennyire produkal mas maszkokat (ott is megfigyelheto volt ez a jelenseg.)
     - Eredmenyek:
         - valamiert - meg mindig - bennemaradt egy fontos resz a kodban: az elejen egy dilatacio, ami miatt a hidak vastagodnak es igy benne maradnak. le kell ujra tesztelni, de ez elmeleti szinten megoldja az osszes ilyen problemat.
+
+# Potencialis javitas; elejen dilatacio kivetele, illetve marching_state[background] = large_value es `non_increasing_path` modszer osszevetese | orig vs. nip
+- patient_0001: ok, orig
+- patient_0002: egyik sem jo. Rossz alapmaszk, tul aggresszivan lecsip belole az algoritmus -> a vegsok alulszegmentalnak
+    - Megjegyzes: Itt pl. segitett a binary closing. TODO: Megnezni, hogy a lyukakat betomkodo maszk kimenete mi. Osszevetve akar a closing-os maszkkal.
+- patient_0003: ok, orig/nip
+- patient_0004: o volt a fo motivacioja a closing-nak.
