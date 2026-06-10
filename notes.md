@@ -562,3 +562,171 @@ A GT maszk itt biztosan rossz. Mindharom modszer maszkja tokeletes, viszont itt 
     - Megjegyzes: Itt pl. segitett a binary closing. TODO: Megnezni, hogy a lyukakat betomkodo maszk kimenete mi. Osszevetve akar a closing-os maszkkal.
 - patient_0003: ok, orig/nip
 - patient_0004: o volt a fo motivacioja a closing-nak.
+
+# Vegso background vs non increasing path osszevetes
+- patient_0001: 
+    - Maszk: ok
+    - Egyeb: mindket alg ok. nip kicsit tobbet hagy meg a hidbol, de o is ok. Szeleteket tekintve minimalis kulonbseg
+- patient_0002: 
+    - Maszk: ok, zajosabb eredmeny mar a GT maszknal is.
+    - Egyeb: Szeleteket tekintve nagyreszt ekvivalens a ket maszk, base fele van resz, ahol nip egy kinyulast kicsit alulszegmental.
+- patient_0003: 
+    - Maszk: Ok, minden esetben
+    - Egyeb: Talan itt nip a jobb, illetve szivizmok megjelenesenel (amikor meg a szelen vannak egy szeletet tekintve) jobbnak tunik - az ott levo kis 2D-s hid nem tunik el.
+- patient_0004: 
+    - Maszk: mindegyik maszk ok
+    - Egyeb: Talan zajosabb egy kicsit a szivizom szele - szeletet tekintve - nip eseten. De kb. ekvivalens a ket megoldas. Illetve nip jobban fennragad a streaking-re, bar ez mindkettore igaz
+- patient_0005: 
+    - Maszk: ok
+    - Egyeb: max a hidas dolog emlitheto itt is
+- patient_0006: 
+    - Maszk: alapvetoen a CT kontrasztja rosszabb, igy az eredmenymaszkok nem tokeletesek
+    - Egyeb: alg-ok futasa okes, neha nip neha background szegmental jobban/alul
+- patient_0007: 
+    - Maszk: alapvetoen ok
+    - Egyeb: mindket alg betomi a szivizmot. Lehet ez az uj modszer miatt van? fura.
+- patient_0008: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0009: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0010: 
+    - Maszk: ok
+    - Egyeb: szivizom hid + maszk szele
+- patient_0011: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0012: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0013: 
+    - Maszk: ok
+    - Egyeb: nagyon zajos alapfelvetel es kimeneti maszkok impulzus-zajszeruek. Ezt javitja a postproc alg
+- patient_0014: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0015: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013
+- patient_0016: 
+    - Maszk: ok
+    - Egyeb: szivizmos dolog
+- patient_0017: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0018: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0019: 
+    - Maszk: alulszegmental mar az eredeti maszk is
+    - Egyeb: alg ok
+- patient_0020: 
+    - Maszk: ok
+    - Egyeb: nip erzekenyebb/tobb bennemarad a streakingbol
+- patient_0021: 
+    - Maszk: ok
+    - Egyeb: rossz CT eleve, mindegyik maszk alulszegmental (gt is)
+- patient_0022: 
+    - Maszk: ok
+    - Egyeb: ~patient_0021
+- patient_0023:
+    - Maszk: ok
+    - Egyeb: ~patient_0021
+- patient_0024: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0026: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0027: 
+    - Maszk: ok
+    - Egyeb: szivizom dolog
+- patient_0028: 
+    - Maszk: ok
+    - Egyeb: eleve rossz felvetel
+- patient_0029: 
+    - Maszk: patient_0028-cal ekvivalens felvetel
+    - Egyeb: -
+- patient_0030: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0031: 
+    - Maszk: ok, gt szerintem itt rosszabb
+    - Egyeb: a felvetel maga is alacsony kontrasztu
+- patient_0032: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0033: 
+    - Maszk: patient_0032-vel ekvivalens felvetel
+    - Egyeb: -
+- patient_0034: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013, eleve alulszegmental mindegyik a felvetel minosege miatt
+- patient_0035: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013
+- patient_0036: 
+    - Maszk: ok
+    - Egyeb: alacsony kontrasztu felvetel (emiatt alulszegmental mindegyik megoldas). gt rosszabb itt.
+- patient_0037: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0038: 
+    - Maszk: ok
+    - Egyeb: ~patient_0002
+- patient_0039: 
+    - Maszk: ok
+    - Egyeb: kicsit alulszegmental mindegyik a gt-hez kepest
+- patient_0040: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0041: 
+    - Maszk: ok
+    - Egyeb: erdekes eredeti felvetel (furcsa kontraszt), ez kihat a megoldasra, de az alg. alapvetoen ok
+- patient_0042: 
+    - Maszk: ok
+    - Egyeb: itt tul vastag a hid a leak-be
+- patient_0043: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013
+- patient_0044: 
+    - Maszk: ok
+    - Egyeb: rosszabb CT ez is, de az alg-ok jol mukodnek
+- patient_0045: 
+    - Maszk: ok
+    - Egyeb: talan itt is kicsit tobb marad a streakingbol a nip-nel
+- patient_0046: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013. Illetve itt "sokkal" masabb nip, nem tudom, hogy jo vagy rossz ertelemben
+- patient_0047: 
+    - Maszk: ok
+    - Egyeb: ~1 voxel vastagsaban van alulszegmentalas
+- patient_0048: 
+    - Maszk: ok
+    - Egyeb: -
+- patient_0049: 
+    - Maszk: ok
+    - Egyeb: nem tudom, hogy itt a CT felvetel minosege mindegyik alulszegmental-e?
+- patient_0050: 
+    - Maszk: ok
+    - Egyeb: kisebb, de az eddigiekhez kepest, ahol "kisebb" nagyobb merteku alulszegmentalas.
+- patient_0051: 
+    - Maszk: ok
+    - Egyeb: ~patient_0013 (sokkal kisebb mertekben)
+- patient_0052: 
+    - Maszk: ok
+    - Egyeb: CT felvetel minosege miatt nem tudom, hogy mennyire szegmentalnak alul
+- patient_0053: 
+    - Maszk: ok
+    - Egyeb: gt maszk biztos rossz
+
+Pentekre fontos dolgok:
+- hogy adhato el ezt lenne fontos atbeszelni
+    - milyen problemakhoz hasznos, ehhez meg mi kellene
+    - publikalhatosag szempontjabol (orvosi folyoiratok) mennyira adhato el igy
+    - doktori felvetelhez kellenenek meg publikaciok (SOTE ok de egyebkent is jol jon)
+
+- rolling ball-os konvex burkolo
+
+- szivizmos dolgok patient_0003

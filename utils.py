@@ -398,10 +398,9 @@ def get_reachable_mask(marching_state, seed_points, neighbors_d):
 def remove_segmentation_leakage_3d(mask, pixel_spacing):
     print("Starting 3D segmentation removal...")
 
-    # reason behind closing: masks that have tunnels inside them instead of holes
+    # reason behind closing: tunnels vs. holes
     # e.g.: patient_0004 -> unique_values = [1]
     # mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3))) # unneccesary but will leave this here for a while
-    # new alternative:
     mask = fill_internal_tunnels(mask=mask)
 
     se_26_connectivity = np.ones((3, 3, 3))
