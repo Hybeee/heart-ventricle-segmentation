@@ -726,6 +726,27 @@ Pentekre fontos dolgok:
     - milyen problemakhoz hasznos, ehhez meg mi kellene
     - publikalhatosag szempontjabol (orvosi folyoiratok) mennyira adhato el igy
     - doktori felvetelhez kellenenek meg publikaciok (SOTE ok de egyebkent is jol jon)
+- Mit mutassak:
+    - Jo felvetelek:
+        - patient_0001 - van leak!
+        - patient_0005
+        - patient_0008
+        - patient_0045 - itt van streaking, de jol turi az algoritmu
+        - patient_0053
+    - Szivizmos/hidas dolog:
+        - patient_0003 - itt inkabb az az erdekes, hogy miert van tobb "lyuk" a maszkban
+        - patient_0005 (o egyebkent jo!!!!) - 1649.6999mm, 1632.8999mm
+        - patient_0010 - -156.1500mm, egyebkent itt szerintem az enyem jo
+    - zajos CT-s:
+        - patient_0002 - van leak
+        - patient_0021
+        - patient_0038 - o jobb, mint patient_0002 eredmeny szempontjabol
+    - rosszabb/kerdojeles eredmeny:
+        - patient_0006 - alacsonyabb/furabb kontrasztu felvetel
+        - patient_0007 - ha feljonne, akkor itt betomodik az alg. miatt a sziv. de itt van leak!! ok: z axis menten kicsi a felvetel -> nincs olyan 3x3x3 block a szivizomnal, ahol legalabb egy voxel ne lenne - helyesen - threshold-ot maszk resze -> closing bezarja, erozio ezt pedig nem oldja meg. Egyebkent az elofeldolgozast/lyukak bezarasat tekintve a felvetel "kicsisege" nem tunik elsore problemasnak. Lehet mas esetben az lenne, de itt nincsenek lyukak/alagutak, illetve ha lennenek is, akkor is betomodne a legtobb.
+        - patient_0019 - mar az eredeti maszk is kicsit alulszegmental szerintem, az algoritmus foleg
+        - patient_0036 - alacsony kontraszt, szerintem a gt maszk rosszabb itt
+        - patient_0049 - a gt-hez viszonyitva jo, de lehet alulszegmental mindenki
 
 - rolling ball-os konvex burkolo
 
