@@ -751,3 +751,9 @@ Pentekre fontos dolgok:
 - rolling ball-os konvex burkolo
 
 - szivizmos dolgok patient_0003
+
+Kovi hetre megnezni:
+- papillaris szivizmok szegmentacioja mennyire van meg
+    - mennyire pontos
+- streaking artifact-os CT-kkel mi a helyzet
+    - tobb polarkoordinatas streaking-es 2D-s kep kellene ott nezni hogy van-e valami
