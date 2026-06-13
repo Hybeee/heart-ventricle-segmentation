@@ -757,3 +757,41 @@ Kovi hetre megnezni:
     - mennyire pontos
 - streaking artifact-os CT-kkel mi a helyzet
     - tobb polarkoordinatas streaking-es 2D-s kep kellene ott nezni hogy van-e valami
+
+# Streaking artifcat-os felvetelek
+- patient_0005
+- patient_0008
+- patient_0020
+
+# Szivizom szegmentaciok vizsgalata
+NOTE:
+- koronalis szeleten talan atlathatobb/nem annyira furak az izmok
+- egyelore ugy nez ki, mintha thresholodolas tortenne, de kicsit mashogy - pl.: mellette levo, threshold feletti voxel nem a maszk resze? -> illetve van olyan, hogy a threshold szerint benne kene lennie, de nincs. lehet ezt irtam le elobb is, de igy tisztabb. pl 240 a maszk resze, de egy 232-es erteku voxel nem.
+- valahogy ossze vannak a maszkok hangolva, ritkan van kozos voxele a kamranak es a szivizomnak
+- az otlet, hogy kamramaszkban levo lyuk a szivizom biztos rossz 
+
+Felvetelek:
+- patient_0001: kb osszhangban a 3 maszk (LV, myo, izom). Kuszoboltnek nez ki a maszk. A kozepso szelet fele kb. szabad szemmel is lathato, hogy mi miert lett szegmentalva, feljebb/lejjebb viszont kerdojeles. szelen is vannak. Jobban latszik talan koronalis nezetbol?
+- patient_0002: nem minden lyuk izom, de a legnagyobbak igen. Emellett mindket izom jelen van a maszk szelen (AL jobban). Keves lyuk van, es az is csak par szeletik lyuk, ami nem izom. Myocardium tulszegmental, illetve valahogy ugy van megcsinalva, hogy ne legyen atfedese a bal kamra szegmentaciojaval - NOTE: ennek neve heart_contour, nincs myocardium kulon. De a heart contour nez ki itt myocardiumnak. thresholding
+- patient_0003: nem minden lyuk tartozik a szivizmokhoz es itt van tobb nagyobb is. CT szeleiig kimennek. nincs myocardium. Koronalis nezetbol itt is jobban latszik, illetve PM erdekesebb/lukacsosabb?
+- patient_0004: szinte biztos hogy rossz a szegmentacio. kevesebb lyuk, de itt is igaz, hogy nem minden lyuk szivizom
+- patient_0005: AL jonak tunik PM erdekes/alulszegmental? Kint vannak a szelen
+- patient_0006: jonak tunik itt mindketto. A CT maga erdekes ("csikos" a kamra)
+- patient_0007: itt is erdekesebb a szegmentacio, kint van a szelen
+- patient_0008: PM kicsit erdekesebb. egyszerre nez ki threshold-olasnak meg nem is..
+- patient_0009: PM erdekesebb
+- patient_0010: itt is rossz lehet? AL nincs a kamraszegmentacio szelen/benne van teljesen, de szerintem azert, mert rossz az AL szegmentacio
+- patient_0011: nem tudom eldonteni, hogy jo-e, szerintem nem. PM rosszabbnak tunik
+- patient_0012: AL jo, PM rossznak tunik/nem ertem, hogy szabad szemmel hogyan lehetne meghatarozni
+- patient_0013: teljesen zajos CT
+- patient_0014: PM mogotti logikat itt sem ertem. mintha tulszegmentalna?
+- patient_0015: nagyon zajos CT, de joknak/jobbnak tunnek, foleg PM
+- patient_0016: thresholdos alapjan jonak tunik
+- patient_0017: jonak tunik
+- patient_0018: ez is jonak tunik
+- patient_0019: base fele PM erdekes - axialis es koronalis szeleteken is. Hasonloan AL is erdekes
+- patient_0020: jonak tunik/kevesbe fura
+- patient_0021: nagyon zajos CT, PM kicsit rosszabbnak/erdekesebbnek tunik. AL megint olyan mintha tulszegmentalna?
+- patient_0022: PM erdekesebb, de a threshold-os gondolatmenet alapjan okesak
+- patient_0023: ugyanaz; PM erdekesebb.
+- patient_0024: base-nel erdekes PM. egyebkent threshold-os gondolatmenet itt is allja a helyet. itt szebbnek neznek ki a maszkok a PM-es base-t leszamitva
