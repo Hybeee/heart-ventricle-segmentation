@@ -204,7 +204,7 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             patient_data=patient_data
         )
 
-    sigma = _get_sigma(output_dir=output_root_dir, slice_index=z)
+    sigma = _get_sigma(output_dir=patient_root, slice_index=z)
 
     results = {}
     results["sigma"] = sigma
