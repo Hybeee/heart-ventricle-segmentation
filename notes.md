@@ -762,13 +762,21 @@ Kovi hetre megnezni:
 - patient_0005
 - patient_0008
 - patient_0020
+- patient_0026
+- patient_0030
+- patient_0033 (minimalis streaking szerintem nem is latszodna)
+- patient_0037
+- patient_0039
+- patient_0045
+- patient_0048
+- patient_0052: nem olyan streaking, mint ami kellene. kozepen van a bal kamranak es nincsenek "sugarak"
 
 # Szivizom szegmentaciok vizsgalata
 NOTE:
 - koronalis szeleten talan atlathatobb/nem annyira furak az izmok
 - egyelore ugy nez ki, mintha thresholodolas tortenne, de kicsit mashogy - pl.: mellette levo, threshold feletti voxel nem a maszk resze? -> illetve van olyan, hogy a threshold szerint benne kene lennie, de nincs. lehet ezt irtam le elobb is, de igy tisztabb. pl 240 a maszk resze, de egy 232-es erteku voxel nem.
 - valahogy ossze vannak a maszkok hangolva, ritkan van kozos voxele a kamranak es a szivizomnak
-- az otlet, hogy kamramaszkban levo lyuk a szivizom biztos rossz 
+- az otlet, hogy kamra maszkban levo lyuk a szivizom biztos rossz 
 
 Felvetelek:
 - patient_0001: kb osszhangban a 3 maszk (LV, myo, izom). Kuszoboltnek nez ki a maszk. A kozepso szelet fele kb. szabad szemmel is lathato, hogy mi miert lett szegmentalva, feljebb/lejjebb viszont kerdojeles. szelen is vannak. Jobban latszik talan koronalis nezetbol?
@@ -795,3 +803,32 @@ Felvetelek:
 - patient_0022: PM erdekesebb, de a threshold-os gondolatmenet alapjan okesak
 - patient_0023: ugyanaz; PM erdekesebb.
 - patient_0024: base-nel erdekes PM. egyebkent threshold-os gondolatmenet itt is allja a helyet. itt szebbnek neznek ki a maszkok a PM-es base-t leszamitva
+- patient_0026: base fele PM erdekes, egyebkent latszatra is okes
+- patient_0027: ugyanez
+- patient_0028: rosszabb minoseguek a maszkok
+- patient_0029: u.a., mint patient_0028
+- patient_0030: itt lathatoan/erthetoen jo
+- patient_0031: erdekesebbek itt is - mindketto
+- patient_0032: mindketto erdekesebb
+- patient_0033: nagyon a base-nel illetve nagyon az apex-nel mindketto erdekes
+- patient_0034: nagyon zajos CT (~patient_0013), igy a maszkok kb. biztos rosszak/pontatlanok
+- patient_0035: nagyon zajos CT, latszik hogy a maszkok is rosszabb minoseguek. Itt inkabb igaznak erzodik a "kamran beluli lyukak = szivizom".
+- patient_0036: minimalisan latszodik a szivizmoknal levo kisebb intenzitas. Emellett PM kicsit furabb. FONTOS: itt pl. letezik olyan axialis szelet, amelyen mindket izom jelen van.
+- patient_0037: itt jonak tunnek + magyarazhatonak is
+- patient_0038: base fele PM megint erdekes, de zajos CT miatt itt sokkal kevesbe latszodik barmi.
+- patient_0039: kevesbe, de valamennyire lathato. kiveve base fele PM
+- patient_0040: apex es base resznel erdekes. PM vegig erdekesebb, kiveve ahol base fele eloszor megjelenik, AL magyarazhatobb
+- patient_0041: Mindketto okesnak/magyarazhatonak tunik itt
+- patient_0042: AL lathato a CT-n is, PM mintha "random" lenne
+- patient_0043: ~patient_0013 -> valoszinuleg pontatlan szegmentaciok
+- patient_0044: nincs osszhangban a kamra- es izomszegmentacio. Talan PM magyarazhato itt jobban?
+- patient_0045: base fele PM erdekes, egyebkent, foleg AL, magyarazhatonak tunik
+- patient_0046: ~patient_0013, pontatlan maszkok, de elnezve a CT-t kb. jo reszt jelolnek ki
+- patient_0047: jonak tunik
+- patient_0048: jol lathato es magyarazhato maszkok
+- patient_0049: AL jobban, PM kevesbe magyarazhato, de eleve rosszabb a CT
+- patient_0050: PM base fele erdekesebb, de amugy jol lathatoak az izmok a CT-n
+- patient_0051: rosszabb CT/kevesbe lathato. Emiatt pontatlannak tuno maszkok
+- patient_0052: AL kevesbe ertelmezheto, illetve a streaking kicsit elrontja PM maszkot
+- patient_0053: eredeti LV maszk is el van rontva itt, hasonloan az izmok maszkjai
+- patient_0054: rosszabb minosegu CT, de kb. helyesnek tuno maszkok.

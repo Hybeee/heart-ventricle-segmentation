@@ -62,6 +62,17 @@ def _save_multislice_3d(config, threshold, patient_id, patient_data):
     nnunet_mask_path = patient_data["nnunet_mask_path"]
     nnunet_mask_sitk, nnunet_mask = utils.scan_to_np_array(nnunet_mask_path, return_sitk=True)
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
+    
+    if config["multislice"]["save_nnunet_mask"]:
+        utils.save_data(
+            data=ventricle,
+            ref_sitk=nnunet_mask_sitk,
+            output_dir=output_dir,
+            name="nnunet_mask",
+            is_mask=True,
+            color="0.55 0.75 0.95",
+            segment_name="nnunet_mask"
+        )
 
     if config["multislice"]["save_ct_and_doc_mask"]:
         output_dir = config["output_dir_name"]
@@ -105,6 +116,12 @@ def _run_and_get_alg_results(config, patient_id, patient_data):
         results = json.load(f)
 
     return results
+
+def _get_sigma(output_dir, slice_index):
+    with open(os.path.join(output_dir, f"slice_{slice_index}", "results.json"), 'r') as f:
+        sub_results = json.load(f)
+    
+    return sub_results["preprocessing"]["sigma"]
 
 def _process_one_patient_multislice(patient_id: str, patient_data: dict, config: dict):
     print(f"Processing {patient_id}")
@@ -186,7 +203,10 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             patient_data=patient_data
         )
 
+    sigma = _get_sigma(z)
+
     results = {}
+    results["sigma"] = sigma
     results["final_threshold"] = final_threshold
     results["slices"] = z_slices
     
