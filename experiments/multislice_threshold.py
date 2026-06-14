@@ -64,6 +64,7 @@ def _save_multislice_3d(config, threshold, patient_id, patient_data):
     ventricle = (nnunet_mask == 3).astype(nnunet_mask.dtype)
     
     if config["multislice"]["save_nnunet_mask"]:
+        output_dir = config["output_dir_name"]
         utils.save_data(
             data=ventricle,
             ref_sitk=nnunet_mask_sitk,
@@ -203,7 +204,7 @@ def _process_one_patient_multislice(patient_id: str, patient_data: dict, config:
             patient_data=patient_data
         )
 
-    sigma = _get_sigma(z)
+    sigma = _get_sigma(output_dir=output_root_dir, slice_index=z)
 
     results = {}
     results["sigma"] = sigma
