@@ -65,9 +65,12 @@ class Viewer:
         self.curr_mask_slice = self.mask[self.slice_index, :, :]
         self.curr_nnunet_mask_slice = self.nnunet_mask[self.slice_index, :, :]
 
-        if self.mode == "polar":
+        try:
             self.slice_center = utils.calculate_slice_center(slice=self.curr_nnunet_mask_slice)
+        except:
+            self.slice_center = None
 
+        if self.mode == "polar":
             self.slice_pc = self._create_polar_converter(
                 center=self.slice_center,
                 ct=self.curr_ct_slice
@@ -92,33 +95,33 @@ class Viewer:
         self.render()
 
     def _init_sliders(self):
-        ax_slice_index_slider = self.fig.add_axes([0.20, 0.10, 0.70, 0.03])
+        ax_slice_index_slider = self.fig.add_axes([0.20, 0.05, 0.70, 0.03])
 
         self.slice_index_slider = Slider(
             ax=ax_slice_index_slider,
             label='Slice Index Slider',
-            valmin=0,
-            valmax=self.mask.shape[0] - 1,
+            valmin=self.start,
+            valmax=self.end,
             valinit=self.slice_index,
-            valsetp=1
+            valstep=1
         )
 
-        self.slice_index_slider.on_chagned(
+        self.slice_index_slider.on_changed(
             lambda val: self._on_slider_changed(slice_index=val)
         )
 
     def _init_widgets(self):
+        self.fig.subplots_adjust(bottom=0.2)
         self._init_sliders()
 
     def _init(self):
-        self.start, self.middle, self.end = self._get_bbox_middle_slice_z(self.mask)
+        self.start, self.middle, self.end = self._get_bbox_middle_slice_z(self.nnunet_mask)
         self.slice_index = self.middle
 
         self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
         self._init_widgets()
 
         self._set_slice_data()
-        self.render()
 
     def render(self):
         fig, ax = self.fig, self.ax
@@ -128,20 +131,23 @@ class Viewer:
             xlim = ax.get_xlim()
             ylim = ax.get_ylim()
 
+        ax.clear()
+
         if self.mode == "ct":
             ct_display = self.curr_ct_slice
             mask_display = self.curr_mask_slice
 
             ax.imshow(ct_display, cmap='gray')
-            ax.scatter(
-                self.slice_center[1],
-                self.slice_center[0],
-                s=8,
-                marker='x',
-                c='cyan',
-                alpha=0.7
-            )
-            ax.imshow(mask_display, cmap='Blues', alpha=0.5)
+            if self.slice_center:
+                ax.scatter(
+                    self.slice_center[1],
+                    self.slice_center[0],
+                    s=8,
+                    marker='x',
+                    c='cyan',
+                    alpha=0.7
+                )
+            ax.imshow(mask_display, cmap='Blues', alpha=0.2)
         else:
             ct_display = self.polar_dir_grad_slice
             mask_display_b = self.polar_mask_slice_b
@@ -166,35 +172,30 @@ class Viewer:
         self.render()
         plt.show()
 
+def launch_viewer(ct, mask, nnunet_mask, sigma, mode):
+    viewer = Viewer(
+        ct=ct,
+        mask=mask,
+        nnunet_mask=nnunet_mask,
+        sigma=sigma,
+        mode=mode
+    )
+    viewer.view()
+
 def main():
-    output_path = ""
+    patient_id = "patient_0030"
+    output_path = os.path.join("streaking_viewer_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:
         results = json.load(f)
     sigma = results["sigma"]
 
     ct = utils.scan_to_np_array(scan_path=os.path.join(output_path, "ct.nii.gz"))
-    mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "final_mask.seg.nrrd"))
+    mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "final_mask_nip.seg.nrrd"))
     nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "nnunet_mask.seg.nrrd"))
 
-    ct_viewer = Viewer(
-        ct=ct,
-        mask=mask,
-        nnunet_mask=nnunet_mask,
-        sigma=sigma,
-        mode="ct"
-    )
-
-    polar_viewer = Viewer(
-        ct=ct,
-        mask=mask,
-        nnunet_mask=nnunet_mask,
-        sigma=sigma,
-        mode="polar"
-    )
-
-    p1 = mp.Process(target=ct_viewer.view)
-    p2 = mp.Process(target=polar_viewer.view)
+    p1 = mp.Process(target=launch_viewer, args=(ct, mask, nnunet_mask, sigma, "ct"))
+    p2 = mp.Process(target=launch_viewer, args=(ct, mask, nnunet_mask, sigma, "polar"))
 
     p1.start()
     p2.start()
