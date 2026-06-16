@@ -183,7 +183,7 @@ def launch_viewer(ct, mask, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0030"
+    patient_id = "patient_0048"
     output_path = os.path.join("streaking_viewer_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:

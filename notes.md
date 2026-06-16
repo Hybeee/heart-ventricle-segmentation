@@ -759,16 +759,40 @@ Kovi hetre megnezni:
     - tobb polarkoordinatas streaking-es 2D-s kep kellene ott nezni hogy van-e valami
 
 # Streaking artifcat-os felvetelek
-- patient_0005
+- patient_0005(!)
+    - streak-ek lyukat okoznak a maszkban
+    - palmafaszeru mintazat a gradiensterkepen
+    - a lyukak nem szivizomnak a reszei
+    - alapveto problema: a maszk csak a legkulsobb radialis pontot jeleniti meg -> ezt konnyu valtoztatni
 - patient_0008
+    - itt nem szolnak bele annyira a streak-ek
+    - kevesbe latszik a palmafas mintazat, a kamra volgye megmarad rendesen
 - patient_0020
+    - mintazat itt nincsen, a grad. map hasonlit arra, mint egy normal szeletnel
+    - viszont itt megfigyelheto a ratapadas a streaking-re.
+        - ez szerintem javithato interpolacioval
 - patient_0026
+    - nem annyira nagy a streaking, nincs ratapadas, inkabb csak a palmafas mintazat figyelheto meg
+    - postprocessing leak-nek erzekeli a streak-hez valo kinyulast -> levagja
 - patient_0030
+    - enyhen megfigyelheto palmafa mintazat
+    - nem okoz lyukakat
+    - nincs ratapadas (nip ratapad)
 - patient_0033 (minimalis streaking szerintem nem is latszodna)
 - patient_0037
+    - kicsi streaking
+    - minimalisan - bar az lehet eleve a grad map - latszik a palmafa pattern
+    - 124-es szeletnel mintha egy kicsit az szolna bele a maszk szelebe, de szerintem nem
+    - alap maszk ratapad, de a post processing maszk leszedi
 - patient_0039
+    - nagyon kicsi streaking, illetve nem er bele a kamraba
 - patient_0045
+    - eszlelheto enyhe ratapadas a streaking-re.
+    - nincs palmafa mintazat (minimalisan van max)
+    - postprocessing ugy nez ki, hogy tudja ellensulyozni a streaking hatasat (lyukak/csikok a maszkban)
 - patient_0048
+    - ratapad a streaking-re es (Descartes-ban nezve) csikok lesznek a maszkban
+    - elotte levo szeleteken kicsit kintebb nyulik a maszk az egyik sugar iranyaba, de ez minimalis.
 - patient_0052: nem olyan streaking, mint ami kellene. kozepen van a bal kamranak es nincsenek "sugarak"
 
 # Szivizom szegmentaciok vizsgalata
