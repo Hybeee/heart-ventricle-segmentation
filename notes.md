@@ -805,7 +805,7 @@ NOTE:
 
 Felvetelek:
 - patient_0001: kb osszhangban a 3 maszk (LV, myo, izom). Kuszoboltnek nez ki a maszk. A kozepso szelet fele kb. szabad szemmel is lathato, hogy mi miert lett szegmentalva, feljebb/lejjebb viszont kerdojeles. szelen is vannak. Jobban latszik talan koronalis nezetbol?
-- patient_0002: nem minden lyuk izom, de a legnagyobbak igen. Emellett mindket izom jelen van a maszk szelen (AL jobban). Keves lyuk van, es az is csak par szeletik lyuk, ami nem izom. Myocardium tulszegmental, illetve valahogy ugy van megcsinalva, hogy ne legyen atfedese a bal kamra szegmentaciojaval - NOTE: ennek neve heart_contour, nincs myocardium kulon. De a heart contour nez ki itt myocardiumnak. thresholding
+- patient_0002: nem minden lyuk izom, de a legnagyobbak igen. Emellett mindket izom jelen van a maszk szelen (AL jobban). Keves lyuk van, es az is csak par szeletig lyuk, ami nem izom. Myocardium tulszegmental, illetve valahogy ugy van megcsinalva, hogy ne legyen atfedese a bal kamra szegmentaciojaval - NOTE: ennek neve heart_contour, nincs myocardium kulon. De a heart contour nez ki itt myocardiumnak. thresholding
 - patient_0003: nem minden lyuk tartozik a szivizmokhoz es itt van tobb nagyobb is. CT szeleiig kimennek. nincs myocardium. Koronalis nezetbol itt is jobban latszik, illetve PM erdekesebb/lukacsosabb?
 - patient_0004: szinte biztos hogy rossz a szegmentacio. kevesebb lyuk, de itt is igaz, hogy nem minden lyuk szivizom
 - patient_0005: AL jonak tunik PM erdekes/alulszegmental? Kint vannak a szelen
