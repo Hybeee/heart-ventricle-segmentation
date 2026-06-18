@@ -798,6 +798,7 @@ Kovi hetre megnezni:
 # Szivizom szegmentaciok vizsgalata
 NOTE:
 - koronalis szeleten talan atlathatobb/nem annyira furak az izmok
+- axialis szeleteken erdekesebb, ezeket irtam le
 - egyelore ugy nez ki, mintha thresholodolas tortenne, de kicsit mashogy - pl.: mellette levo, threshold feletti voxel nem a maszk resze? -> illetve van olyan, hogy a threshold szerint benne kene lennie, de nincs. lehet ezt irtam le elobb is, de igy tisztabb. pl 240 a maszk resze, de egy 232-es erteku voxel nem.
 - valahogy ossze vannak a maszkok hangolva, ritkan van kozos voxele a kamranak es a szivizomnak
 - az otlet, hogy kamra maszkban levo lyuk a szivizom biztos rossz 
