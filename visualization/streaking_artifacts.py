@@ -20,6 +20,8 @@ class Viewer:
         self.sigma = sigma
         self.mode=mode
 
+        self.boundary_type = "Outermost"
+
         # initializing
         self._init()
 
@@ -89,7 +91,11 @@ class Viewer:
 
             self.polar_mask_slice = self.slice_pc.cv2WarpPolar(image=self.curr_mask_slice.astype(np.int32))
             self.polar_mask_slice = (self.polar_mask_slice != 0).astype(self.polar_mask_slice.dtype)
-            self.polar_mask_slice_b = utils.get_polar_boundary_points(polar_mask=self.polar_mask_slice, theta_step_size=1)
+            
+            if self.boundary_type == "Outermost":
+                self.polar_mask_slice_b = utils.get_polar_boundary_points(polar_mask=self.polar_mask_slice, theta_step_size=1)
+            else:
+                self.polar_mask_slice_b = utils.get_mask_boundary(mask=self.polar_mask_slice)
 
     def _on_slider_changed(self, slice_index):
         self.slice_index = slice_index
@@ -113,10 +119,16 @@ class Viewer:
             lambda val: self._on_slider_changed(slice_index=val)
         )
     
-    def _on_radio_click(self, label):
+    def _on_radio_click_mask(self, label):
         index = np.where(self.mask_names == label)[0][0]
         self.mask_index = index
         self.mask = self.masks[index]
+
+        self._set_slice_data()
+        self.render()
+
+    def _on_radio_click_boundary(self, label):
+        self.boundary_type = label
 
         self._set_slice_data()
         self.render()
@@ -130,8 +142,17 @@ class Viewer:
             labels=self.mask_names,
             active=0
         )
+        self.radio_mask_selector.on_clicked(self._on_radio_click_mask)
 
-        self.radio_mask_selector.on_clicked(self._on_radio_click)
+        ax_radio_boundary_selector = self.fig.add_axes([0.42, 0.10, 0.20, 0.10])
+        ax_radio_boundary_selector.set_title("Boundary Selector")
+        ax_radio_boundary_selector.axis('off')
+        self.radio_boundary_selector = RadioButtons(
+            ax_radio_boundary_selector,
+            labels=['Outermost', 'All'],
+            active=0
+        )
+        self.radio_boundary_selector.on_clicked(self._on_radio_click_boundary)
 
     def _init_widgets(self):
         self.fig.subplots_adjust(bottom=0.3)
@@ -209,7 +230,7 @@ def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0048"
+    patient_id = "patient_0005"
     output_path = os.path.join("streaking_viewer_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:
