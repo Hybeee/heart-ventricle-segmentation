@@ -1,6 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, RadioButtons
 import numpy as np
 
 import utils
@@ -10,9 +10,12 @@ import json
 import multiprocessing as mp
 
 class Viewer:
-    def __init__(self, ct, mask, nnunet_mask, sigma, mode):
+    def __init__(self, ct, masks, mask_names, nnunet_mask, sigma, mode):
         self.ct = ct
-        self.mask = mask
+        self.masks = masks
+        self.mask_index = 0
+        self.mask = masks[0]
+        self.mask_names = np.array(mask_names)
         self.nnunet_mask = nnunet_mask
         self.sigma = sigma
         self.mode=mode
@@ -109,10 +112,32 @@ class Viewer:
         self.slice_index_slider.on_changed(
             lambda val: self._on_slider_changed(slice_index=val)
         )
+    
+    def _on_radio_click(self, label):
+        index = np.where(self.mask_names == label)[0][0]
+        self.mask_index = index
+        self.mask = self.masks[index]
+
+        self._set_slice_data()
+        self.render()
+
+    def _init_buttons(self):
+        ax_radio_mask_selector = self.fig.add_axes([0.20, 0.10, 0.20, 0.10])
+        ax_radio_mask_selector.set_title("Mask Selector")
+        ax_radio_mask_selector.axis('off')
+        self.radio_mask_selector = RadioButtons(
+            ax_radio_mask_selector,
+            labels=self.mask_names,
+            active=0
+        )
+
+        self.radio_mask_selector.on_clicked(self._on_radio_click)
 
     def _init_widgets(self):
-        self.fig.subplots_adjust(bottom=0.2)
+        self.fig.subplots_adjust(bottom=0.3)
+        
         self._init_sliders()
+        self._init_buttons()
 
     def _init(self):
         self.start, self.middle, self.end = self._get_bbox_middle_slice_z(self.nnunet_mask)
@@ -145,7 +170,7 @@ class Viewer:
                     s=8,
                     marker='x',
                     c='cyan',
-                    alpha=0.7
+                    alpha=0.7,
                 )
             ax.imshow(mask_display, cmap='Blues', alpha=0.2)
         else:
@@ -159,7 +184,7 @@ class Viewer:
                 s=5,
                 marker='o',
                 c='green',
-                alpha=0.3
+                alpha=0.3,
             )
 
         if is_already_rendered:
@@ -172,10 +197,11 @@ class Viewer:
         self.render()
         plt.show()
 
-def launch_viewer(ct, mask, nnunet_mask, sigma, mode):
+def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer = Viewer(
         ct=ct,
-        mask=mask,
+        masks=masks,
+        mask_names=mask_names,
         nnunet_mask=nnunet_mask,
         sigma=sigma,
         mode=mode
@@ -191,11 +217,15 @@ def main():
     sigma = results["sigma"]
 
     ct = utils.scan_to_np_array(scan_path=os.path.join(output_path, "ct.nii.gz"))
-    mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "final_mask_nip.seg.nrrd"))
+    mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "mask.seg.nrrd"))
+    mask_nip = utils.scan_to_np_array(scan_path=os.path.join(output_path, "final_mask_nip.seg.nrrd"))
     nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "nnunet_mask.seg.nrrd"))
 
-    p1 = mp.Process(target=launch_viewer, args=(ct, mask, nnunet_mask, sigma, "ct"))
-    p2 = mp.Process(target=launch_viewer, args=(ct, mask, nnunet_mask, sigma, "polar"))
+    masks = [mask, mask_nip]
+    mask_names = ["Orig", "PostProc"]
+
+    p1 = mp.Process(target=launch_viewer, args=(ct, masks, mask_names, nnunet_mask, sigma, "ct"))
+    p2 = mp.Process(target=launch_viewer, args=(ct, masks, mask_names, nnunet_mask, sigma, "polar"))
 
     p1.start()
     p2.start()
