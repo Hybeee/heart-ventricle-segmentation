@@ -857,3 +857,12 @@ Felvetelek:
 - patient_0052: AL kevesbe ertelmezheto, illetve a streaking kicsit elrontja PM maszkot
 - patient_0053: eredeti LV maszk is el van rontva itt, hasonloan az izmok maszkjai
 - patient_0054: rosszabb minosegu CT, de kb. helyesnek tuno maszkok.
+
+sziv izok:
+    - konvex burkolo(itt a zaj miatt nem olyan jo)/rolling ball a burkolora
+
+streaking:
+    - magja mennyire szegmentalhato? thresholding
+    - ha igen akkor innen polarkoordinatas plot, mint center
+
+use-case-ek az algoritmusra
