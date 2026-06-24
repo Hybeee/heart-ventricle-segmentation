@@ -26,6 +26,7 @@ def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spac
     spacing = orig_scan.GetSpacing()
     spacing = spacing[::-1]
     scan = sitk.GetArrayFromImage(orig_scan)
+    scan = scan.astype(bool)
 
     if return_all:
         return spacing, orig_scan, scan
@@ -37,6 +38,7 @@ def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spac
         return scan
 
 def save_data(data, ref_sitk, output_dir, name, is_mask=False, color="0.35 0.75 0.45", segment_name="mask"):
+    data = data.astype(np.uint8)
     img = sitk.GetImageFromArray(data)
 
     img.SetSpacing(ref_sitk.GetSpacing())
@@ -401,6 +403,7 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
     # reason behind closing: tunnels vs. holes
     # e.g.: patient_0004 -> unique_values = [1]
     # mask = ndimage.binary_closing(mask, structure=np.ones((3, 3, 3))) # unneccesary but will leave this here for a while
+    mask = mask.astype(bool)
     mask = fill_internal_tunnels(mask=mask)
 
     se_26_connectivity = np.ones((3, 3, 3))
