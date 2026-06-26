@@ -60,7 +60,6 @@ def _get_relevant_points_mask(mask_b, ch_b):
     distances, _ = tree.query(mask_b_points)
 
     threshold = np.percentile(distances, 80)
-    print(f"Distance threshold: {threshold}")
     far_points = mask_b_points[distances > threshold]
 
     far_mask = np.zeros_like(mask_b)
