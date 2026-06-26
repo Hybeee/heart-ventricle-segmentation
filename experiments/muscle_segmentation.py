@@ -105,6 +105,7 @@ def run_for_patient(patient_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+    mask = mask.astype(bool)
 
     mask = _fill_internal_holes(mask=mask)
     boundary_mask = _get_mask_boundary(mask=mask)

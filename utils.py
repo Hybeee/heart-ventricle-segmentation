@@ -26,7 +26,6 @@ def scan_to_np_array(scan_path, return_all=False, return_sitk=False, return_spac
     spacing = orig_scan.GetSpacing()
     spacing = spacing[::-1]
     scan = sitk.GetArrayFromImage(orig_scan)
-    scan = scan.astype(bool)
 
     if return_all:
         return spacing, orig_scan, scan
