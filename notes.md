@@ -865,4 +865,30 @@ streaking:
     - magja mennyire szegmentalhato? thresholding
     - ha igen akkor innen polarkoordinatas plot, mint center
 
-use-case-ek az algoritmusra
+# use-case-ek az algoritmusra
+- Zhang et al., "Calculation of left ventricular ejection fraction using an 8-layer residual U-Net…versus echocardiography", Quantitative Imaging in Medicine and Surgery, 2023
+    - https://qims.amegroups.org/article/view/116505/html
+    - Cardiac CT angiography (CCTA) felveteleket hasznalnak
+    - LVEF value a motivacio: left ventricular ejection fraction
+        - szamos medical condition ezen value alapjan allithato meg, illetve pl. mutetekhez is hasznalt.
+        - ehhez ha jol ertem az kell, hogy a kamra egyszer verre teli, egyszer meg ne verrel teli legyen.
+- Zreik et al., "Automatic Segmentation of the Left Ventricle in Cardiac CT Angiography Using Convolutional Neural Network" (arXiv:1704.05698)
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC7231613/
+    - "Currently, cardiac CT is widely used to detect coronary artery and valvular heart diseases, as well as assess LV wall thickness and cardiac function."
+    - myocardium szegmentacio itt a fo cel, a fenti idezet emlit kicsit a use-case-rol
+- "Semantic Segmentation for Preoperative Planning in Transcatheter Aortic Valve Replacement" (arXiv, 2025)
+    - Transcatheter Aortic Valve Replacement surgery-hez kell LV segmentation
+- Mao, Y., Zhu, G., Yang, T., Lange, R., Noterdaeme, T., Ma, C., & Yang, J. (2024). Rapid segmentation of computed tomography angiography images of the aortic valve: the efficacy and clinical value of a deep learning algorithm. Frontiers in Bioengineering and Biotechnology, 12, 1285166.
+    - ugyanugy TAVR-rol szol, nem emliti explicit, hogy ehhez kell LV szegmentacio, de az implementalt modellben kiertekeli az LV szegmentacio pontossagat
+- Kim et al., "Left ventricular myocardium segmentation on arterial phase of multi-detector row computed tomography", Computerized Medical Imaging and Graphics, 2011
+    - ez inkabb a myocardium szegmentaciorol szol, ami elvegezheto a mostani megoldassal (elobb szivizom szegmentacio, majd nnunet - (LV + szivizom) = myocardium)
+- Chen, Z., Rigolli, M., Vigneault, D. M., Kligerman, S., Hahn, L., Narezkina, A., ... & Contijoch, F. (2021). Automated cardiac volume assessment and cardiac long-and short-axis imaging plane prediction from electrocardiogram-gated computed tomography volumes enabled by deep learning. European Heart Journal-Digital Health, 2(2), 311-322.
+    - "Accurate and reproducible morphofunctional assessment of the left ventricle (LV) is crucial as LV morphology, volumes, ejection fraction (EF), and regional function are critical parameters used in the diagnosis,1 clinical management, prognostication, and follow-up of numerous cardiovascular and systemic diseases.2,3 The assessment of LV parameters is included in clinical guidelines1–3 and is used for both inclusion criteria and endpoints in clinical trials.4 In addition, regional LV wall motion abnormalities for 17 American Heart Association (AHA) LV segments are assessed using standardized views and are important for the evaluation of cardiac pathology, including coronary artery disease (CAD).5,6 Beyond the LV, the assessment of the left atrium (LA) provides additional insight into cardiovascular disease and function and is particularly important in evaluating patients with atrial fibrillation, valvular disease, and diastolic heart failure.7"
+    - ir peldat, hogy mire jo a szegmentacio (fent). A fo celja viszont a cikknek egy olyan megoldas implementalasa, ami egyszerre szegmental es meghatarozza a SAX es LAX imaging sikok vektorait.
+- Haq, R., Hotca, A., Apte, A., Rimner, A., Deasy, J. O., & Thor, M. (2020). Cardio-pulmonary substructure segmentation of radiotherapy computed tomography images using convolutional neural networks for clinical outcomes analysis. Physics and imaging in radiation oncology, 14, 61-66.
+    - LV szegmentacio fontos sugarterapia eseten (cardiac dose constraints)
+    - Eddig csak sziv + tudo szegmentaciora fokuszaltak, de egyre inkabb szukseg van a reszletesebb szegmentalasa ezen szerveknek
+- Duane, F., Aznar, M. C., Bartlett, F., Cutter, D. J., Darby, S. C., Jagsi, R., ... & Taylor, C. W. (2017). A cardiac contouring atlas for radiotherapy. Radiotherapy and Oncology, 122(3), 416-422.
+    - kb. ugyanaz a lenyeg, mint az elozonel
+- Jung, J. W., Mille, M. M., Ky, B., Kenworthy, W., Lee, C., Yeom, Y. S., ... & RadComp Consortium. (2021). Application of an automatic segmentation method for evaluating cardiac structure doses received by breast radiotherapy patients. Physics and imaging in radiation oncology, 19, 138-144.
+    - itt is az a lenyeg, hogy megnezzek, hogy mennyi sugarzas eri az LV-t/sziv reszeit -> kell a szegmentacio

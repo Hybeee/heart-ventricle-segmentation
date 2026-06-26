@@ -263,21 +263,24 @@ class Viewer:
                     c='red',
                     alpha=0.7
                 )
-                
+
             ax.imshow(mask_display, cmap='Blues', alpha=0.2)
         else:
             ct_display = self.polar_dir_grad_slice
             mask_display_b = self.polar_mask_slice_b
 
             ax.imshow(ct_display, cmap='jet')
-            ax.scatter(
-                mask_display_b[:, 1],
-                mask_display_b[:, 0],
-                s=5,
-                marker='o',
-                c='green',
-                alpha=0.3,
-            )
+            try:
+                ax.scatter(
+                    mask_display_b[:, 1],
+                    mask_display_b[:, 0],
+                    s=5,
+                    marker='o',
+                    c='green',
+                    alpha=0.3,
+                )
+            except:
+                pass
 
         if is_already_rendered:
             ax.set_xlim(xlim)
@@ -301,7 +304,7 @@ def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0005"
+    patient_id = "patient_0048"
     output_path = os.path.join("streaking_viewer_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:
