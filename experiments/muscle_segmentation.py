@@ -51,7 +51,6 @@ def _get_relevant_points_mask(mask_b, ch_b):
     mask_b_points = np.argwhere(mask_b)
     ch_b_points = np.argwhere(ch_b)
     
-    print("Calc...")
     tree = KDTree(ch_b_points)
     distances, _ = tree.query(mask_b_points)
 
@@ -67,51 +66,53 @@ def _get_relevant_points_mask(mask_b, ch_b):
     top3 = components[np.argsort(counts)[-3:]]
     far_mask = np.isin(far_mask_labeled, top3)
 
-    for comp in top3:
-        comp_points = np.argwhere(far_mask_labeled == comp)
-        zmin, ymin, xmin = comp_points.min(axis=0)
-        zmax, ymax, xmax = comp_points.max(axis=0)
+    # for comp in top3:
+    #     comp_points = np.argwhere(far_mask_labeled == comp)
+    #     zmin, ymin, xmin = comp_points.min(axis=0)
+    #     zmax, ymax, xmax = comp_points.max(axis=0)
 
-        radius = min((zmax-zmin)/2, (ymax-ymin)/2, (xmax-xmin)/2)
+    #     radius = min((zmax-zmin)/2, (ymax-ymin)/2, (xmax-xmin)/2)
 
-        print(f"Radius: {radius}")
+    #     print(f"Radius: {radius}")
 
     return far_mask
 
+def make_ball(radius):
+    r = int(radius)
+    coords = np.ogrid[-r:r+1, -r:r+1, -r:r+1]
+    return sum(c**2 for c in coords) <= radius**2
 
-def main():
-    patient_id = "patient_0008"
-    output_dir = os.path.join("streaking_viewer_output", patient_id)
+def closing_downsampled(mask, radius, factor=2):
+    small = ndimage.zoom(mask.astype(float), 1/factor, order=0) > 0.5
+    ball = make_ball(max(1, int(radius / factor)))
 
-    ct = utils.scan_to_np_array(scan_path=os.path.join(output_dir, "ct.nii.gz"))
-    mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(output_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+    print(f"Running closing on mask shape: {small.shape} with ball shape: {ball.shape}")
+    closed_small = ndimage.binary_closing(small, structure=ball)
+    closed = ndimage.zoom(closed_small.astype(float), factor, order=1) > 0.5
+
+    pad_width = [(0, max(0, mask.shape[i] - closed.shape[i])) for i in range(3)]
+    closed = np.pad(closed, pad_width, mode='edge')
+    closed = closed[tuple(slice(0, s) for s in mask.shape)]
+
+    return closed
+
+def run_for_patient(patient_dir):
+    output_dir = os.path.join(patient_dir, "heart_muscle_data")
+    os.makedirs(output_dir, exist_ok=True)
+
+    mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
 
     mask = _fill_internal_holes(mask=mask)
     boundary_mask = _get_mask_boundary(mask=mask)
 
-    chull_path = os.path.join(output_dir, "ch_b.seg.nrrd")
-    if os.path.exists(chull_path):
-        ch_b = utils.scan_to_np_array(scan_path=chull_path)
-    else:
-        ch = _get_convex_hull(mask=mask)
-        ch_b = _get_mask_boundary(mask=ch)
+    ch = _get_convex_hull(mask=mask)
+    ch_b = _get_mask_boundary(mask=ch)
 
     far_mask = _get_relevant_points_mask(
         mask_b=boundary_mask,
         ch_b=ch_b
     )
-    
-    closed_mask = ndimage.binary_closing(mask, structure=np.ones((13, 13, 13)))
-    diff = closed_mask & ~mask
-    diff = ndimage.binary_opening(diff, structure=np.ones((3, 3, 3)))
 
-    diff_labeled, n_components = ndimage.label(diff)
-    components, counts = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
-    top2 = components[np.argsort(counts)[-2:]]
-    muscle_mask = np.isin(diff_labeled, top2)
-
-
-    print("Saving data")
     utils.save_data(
         data=far_mask,
         ref_sitk=mask_sitk,
@@ -133,14 +134,84 @@ def main():
     )
 
     utils.save_data(
-        data=muscle_mask,
+        data=ch_b,
         ref_sitk=mask_sitk,
         output_dir=output_dir,
-        name="muscle_mask",
+        name="convex_hull_boundary",
         is_mask=True,
         color="0.2 1.0 0.4",
-        segment_name="muscle_mask"
+        segment_name="convex_hull_boundary"
     )
+
+def main():
+
+    dir = "postproc_alg_vars_output_hm"
+    for patient_id in os.listdir(dir):
+        print(patient_id)
+        run_for_patient(patient_dir=os.path.join(dir, patient_id))
+
+    # patient_id = "patient_0008"
+    # output_dir = os.path.join("streaking_viewer_output", patient_id)
+
+    # ct = utils.scan_to_np_array(scan_path=os.path.join(output_dir, "ct.nii.gz"))
+    # mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(output_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+
+    # mask = _fill_internal_holes(mask=mask)
+    # boundary_mask = _get_mask_boundary(mask=mask)
+
+    # chull_path = os.path.join(output_dir, "ch_b.seg.nrrd")
+    # if os.path.exists(chull_path):
+    #     ch_b = utils.scan_to_np_array(scan_path=chull_path)
+    # else:
+    #     ch = _get_convex_hull(mask=mask)
+    #     ch_b = _get_mask_boundary(mask=ch)
+
+    # far_mask = _get_relevant_points_mask(
+    #     mask_b=boundary_mask,
+    #     ch_b=ch_b
+    # )
+    
+    # # ball = make_ball(13)
+    # # closed_mask = ndimage.binary_closing(mask, structure=ball)
+    # closed_mask = closing_downsampled(mask=mask, radius=13)
+    # diff = closed_mask & ~mask
+    # diff = ndimage.binary_opening(diff, structure=np.ones((3, 3, 3)))
+
+    # diff_labeled, n_components = ndimage.label(diff)
+    # components, counts = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
+    # top2 = components[np.argsort(counts)[-2:]]
+    # muscle_mask = np.isin(diff_labeled, top2)
+
+    # print("Saving data")
+    # utils.save_data(
+    #     data=far_mask,
+    #     ref_sitk=mask_sitk,
+    #     output_dir=output_dir,
+    #     name="far_mask",
+    #     is_mask=True,
+    #     color="1.0 0.2 0.2",
+    #     segment_name="far_mask"
+    # )
+
+    # utils.save_data(
+    #     data=boundary_mask,
+    #     ref_sitk=mask_sitk,
+    #     output_dir=output_dir,
+    #     name="boundary_mask",
+    #     is_mask=True,
+    #     color="0.2 0.8 1.0",
+    #     segment_name="boundary_mask"
+    # )
+
+    # utils.save_data(
+    #     data=muscle_mask,
+    #     ref_sitk=mask_sitk,
+    #     output_dir=output_dir,
+    #     name="muscle_mask",
+    #     is_mask=True,
+    #     color="0.2 1.0 0.4",
+    #     segment_name="muscle_mask"
+    # )
 
 if __name__ == "__main__":
     main()
