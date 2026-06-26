@@ -150,7 +150,7 @@ def run_for_patient(patient_dir):
 
 def main():
 
-    dir = "postproc_alg_vars_output_hm"
+    dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output_hm")
     for patient_id in os.listdir(dir):
         print(patient_id)
         run_for_patient(patient_dir=os.path.join(dir, patient_id))
