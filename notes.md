@@ -892,3 +892,10 @@ streaking:
     - kb. ugyanaz a lenyeg, mint az elozonel
 - Jung, J. W., Mille, M. M., Ky, B., Kenworthy, W., Lee, C., Yeom, Y. S., ... & RadComp Consortium. (2021). Application of an automatic segmentation method for evaluating cardiac structure doses received by breast radiotherapy patients. Physics and imaging in radiation oncology, 19, 138-144.
     - itt is az a lenyeg, hogy megnezzek, hogy mennyi sugarzas eri az LV-t/sziv reszeit -> kell a szegmentacio
+
+# heart muscle segmentation initial alg eval
+- patient_0001: kb. jol kijeloli a ROI-t. egyaltalan nem tokeletes
+- patient_0002: outlier resze a maszknak elrontja a convex hull-t, emiatt elromlik az algo. Egyebkent igy is latszik a kb. jo irany
+- patient_0003: outlier miatt elromlik
+- patient_0004: itt is ez a baj, plusz itt alapbol rosszabbnak tunnek az eredmenyek
+- patient_0005: plusz alakpriorral ez jol nezne ki, nem megy felre.
