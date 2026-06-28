@@ -3,9 +3,11 @@ from skimage.morphology import convex_hull_image
 from scipy.ndimage import distance_transform_edt
 from scipy.spatial import KDTree
 import scipy.ndimage as ndimage
+import scipy.signal as signal
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
+import time
 
 import os
 import sys
@@ -15,6 +17,51 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 import utils
+
+def rolling_ball_conv_thresh(mask, radius):
+    # print(f"pre-rolling sum: {mask.sum()}")
+
+    ball = make_ball(radius=radius)
+    mask = mask.astype(np.int32)
+    ball = ball.astype(np.int32)
+
+    percentile = 0.75
+
+    # conv = ndimage.convolve(mask, ball, mode='constant')
+    conv = signal.fftconvolve(mask, ball, mode='same')
+    conv = np.round(conv).astype(np.int32)
+    
+    dilated = conv > ball.sum() * 0.05
+    dilated = dilated.astype(np.int32)
+    # print(f"dilated sum: {dilated.sum()}")
+
+    # conv = ndimage.convolve(dilated, ball, mode='constant')
+    conv = signal.fftconvolve(dilated, ball, mode='same')
+    conv = np.round(conv).astype(np.int32)
+
+    closed = conv > ball.sum() * percentile
+    # print(f"closed sum: {closed.sum()}")
+
+    return closed
+
+def rolling_ball_dt(mask, radius):
+    # print(f"pre-rolling sum: {mask.sum()}")
+
+    mask = mask.astype(np.int32)
+
+    inv_mask = mask == 0
+    dt = ndimage.distance_transform_edt(inv_mask, sampling=[1, 1, 1])
+    inv_eroded = dt >= radius * 0.95
+    dilated = ~inv_eroded
+    dilated = dilated.astype(np.int32)
+    # print(f"dilated sum: {dilated.sum()}")
+
+    dt = ndimage.distance_transform_edt(dilated, sampling=[1, 1, 1])
+    closed = dt >= radius * 0.75
+    closed = closed.astype(np.int32)
+    # print(f"closed sum: {closed.sum()}")
+
+    return closed
 
 def _get_convex_hull(mask):
     coords = np.argwhere(mask)
@@ -67,17 +114,19 @@ def _get_relevant_points_mask(mask_b, ch_b):
     
     far_mask_labeled, n_components = ndimage.label(far_mask)
     components, counts = np.unique(far_mask_labeled[far_mask_labeled > 0], return_counts=True)
-    top3 = components[np.argsort(counts)[-3:]]
-    far_mask = np.isin(far_mask_labeled, top3)
+    top3_idx = np.argsort(counts)[-3:]
+    top3_components = components[top3_idx]
+    top3_counts = counts[top3_idx]
+    far_mask = np.isin(far_mask_labeled, top3_components)
 
-    # for comp in top3:
+    # for comp, count in zip(top3_components, top3_counts):
     #     comp_points = np.argwhere(far_mask_labeled == comp)
     #     zmin, ymin, xmin = comp_points.min(axis=0)
     #     zmax, ymax, xmax = comp_points.max(axis=0)
 
     #     radius = min((zmax-zmin)/2, (ymax-ymin)/2, (xmax-xmin)/2)
 
-    #     print(f"Radius: {radius}")
+    #     print(f"Radius: {radius} | Count: {count}")
 
     return far_mask
 
@@ -110,12 +159,18 @@ def run_for_patient(patient_dir):
     mask = _fill_internal_holes(mask=mask)
     boundary_mask = _get_mask_boundary(mask=mask)
 
-    ch = _get_convex_hull(mask=mask)
-    ch_b = _get_mask_boundary(mask=ch)
+    start = time.perf_counter()
+    radius = 11
+    rolling_ball_hull = rolling_ball_conv_thresh(mask=mask, radius=radius)
+    print(f"rolling ball - conv: {time.perf_counter() - start:.3f}s")
+    hull_b = _get_mask_boundary(mask=rolling_ball_hull)
+
+    # ch = _get_convex_hull(mask=mask)
+    # ch_b = _get_mask_boundary(mask=ch)
 
     far_mask = _get_relevant_points_mask(
         mask_b=boundary_mask,
-        ch_b=ch_b
+        ch_b=hull_b
     )
 
     utils.save_data(
@@ -139,19 +194,18 @@ def run_for_patient(patient_dir):
     )
 
     utils.save_data(
-        data=ch_b,
+        data=hull_b,
         ref_sitk=mask_sitk,
         output_dir=output_dir,
-        name="convex_hull_boundary",
+        name="rolling_ball_hull_boundary",
         is_mask=True,
         color="0.2 1.0 0.4",
-        segment_name="convex_hull_boundary"
+        segment_name="rolling_ball_hull_boundary"
     )
 
 def main():
-
-    dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output_hm")
-    for patient_id in sorted(os.listdir(dir)):
+    dir = os.path.join(ROOT_DIR, "streaking_viewer_output")
+    for patient_id in sorted(['patient_0008']):
         print(patient_id)
         run_for_patient(patient_dir=os.path.join(dir, patient_id))
 
@@ -163,6 +217,19 @@ def main():
 
     # mask = _fill_internal_holes(mask=mask)
     # boundary_mask = _get_mask_boundary(mask=mask)
+
+    # radius = 9
+    # ball = make_ball(radius=radius)
+
+    # start = time.perf_counter()
+    # rolling_ball_conv_closed = rolling_ball_conv_thresh(mask=mask, radius=radius)
+    # print(f"rolling ball - conv: {time.perf_counter() - start:.3f}s")
+
+    # print()
+
+    # start = time.perf_counter()
+    # rolling_ball_dt_closed = rolling_ball_dt(mask=mask, radius=radius)
+    # print(f"rolling ball - dt: {time.perf_counter() - start:.3f}s")
 
     # chull_path = os.path.join(output_dir, "ch_b.seg.nrrd")
     # if os.path.exists(chull_path):
@@ -189,23 +256,23 @@ def main():
 
     # print("Saving data")
     # utils.save_data(
-    #     data=far_mask,
+    #     data=rolling_ball_conv_closed,
     #     ref_sitk=mask_sitk,
     #     output_dir=output_dir,
-    #     name="far_mask",
+    #     name="rolling_ball_conv_closed",
     #     is_mask=True,
     #     color="1.0 0.2 0.2",
-    #     segment_name="far_mask"
+    #     segment_name="rolling_ball_conv_closed"
     # )
 
     # utils.save_data(
-    #     data=boundary_mask,
+    #     data=rolling_ball_dt_closed,
     #     ref_sitk=mask_sitk,
     #     output_dir=output_dir,
-    #     name="boundary_mask",
+    #     name="rolling_ball_dt_closed",
     #     is_mask=True,
     #     color="0.2 0.8 1.0",
-    #     segment_name="boundary_mask"
+    #     segment_name="rolling_ball_dt_closed"
     # )
 
     # utils.save_data(

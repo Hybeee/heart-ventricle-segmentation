@@ -518,7 +518,6 @@ def remove_segmentation_leakage_3d(mask, pixel_spacing):
 
     return mask_reconstructed, mask_reconstructed_nip
 
-
 def calculate_mask_metrics(prediction, ground_truth):
     assert prediction.shape == ground_truth.shape
 
