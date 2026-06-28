@@ -204,8 +204,8 @@ def run_for_patient(patient_dir):
     )
 
 def main():
-    dir = os.path.join(ROOT_DIR, "streaking_viewer_output")
-    for patient_id in sorted(['patient_0008']):
+    dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output_hm")
+    for patient_id in sorted(os.listdir(dir)):
         print(patient_id)
         run_for_patient(patient_dir=os.path.join(dir, patient_id))
 
