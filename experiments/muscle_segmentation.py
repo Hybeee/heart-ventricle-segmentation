@@ -5,8 +5,7 @@ from scipy.spatial import KDTree
 import scipy.ndimage as ndimage
 import scipy.signal as signal
 import matplotlib.pyplot as plt
-import SimpleITK as sitk
-import matplotlib.pyplot as plt
+import cv2
 import time
 
 import os
@@ -149,12 +148,97 @@ def closing_downsampled(mask, radius, factor=2):
 
     return closed
 
+def _get_polar_mask(polar_converter: utils.PolarConverter, mask):
+    mask_polar = polar_converter.cv2WarpPolar(image=mask.astype(np.int32))
+    mask_polar = (mask_polar != 0).astype(mask_polar.dtype)
+
+    return mask_polar
+
+def _radial_fill_polar(mask_polar, far_polar, hull_mask_polar):
+    radius_samples, angle_samples = mask_polar.shape
+    out_polar = np.zeros_like(mask_polar, dtype=np.uint8)
+
+    far_points = np.argwhere(far_polar > 0)
+
+    for r_start, theta_idx in far_points:
+        r = r_start
+        while 0 <= r < radius_samples:
+            is_far = far_polar[r, theta_idx] > 0
+            is_mask = mask_polar[r, theta_idx] > 0
+            inside_hull = hull_mask_polar[r, theta_idx] > 0
+
+            if not inside_hull:
+                break
+
+            if is_mask and not is_far:
+                break
+
+            out_polar[r, theta_idx] = 1
+            r += 1
+    
+    return out_polar
+
+def segment_muscles(mask, nnunet_mask, far_mask, hull_mask):
+    heart_segmentation = np.zeros_like(mask)
+    
+    z, y, x = mask.shape
+
+    for y_i in range(y):
+        mask_slice = mask[:, y_i, :]
+        nnunet_slice = nnunet_mask[:, y_i, :]
+        far_slice = far_mask[:, y_i, :]
+        hull_slice = hull_mask[:, y_i, :]
+
+        if far_slice.sum() == 0:
+            continue
+
+        center = utils.calculate_slice_center(slice=nnunet_slice)
+
+        maxRadius = min(
+            center[0],
+            center[1],
+            z - center[0],
+            x - center[1]
+        )
+        radius_samples = maxRadius
+        angle_samples = 360
+        polar_converter = utils.PolarConverter(
+            dsize=(radius_samples, angle_samples),
+            maxRadius=maxRadius,
+            center=(center[1], center[0]),
+            flags=cv2.WARP_POLAR_LINEAR
+        )
+
+
+        mask_polar = _get_polar_mask( polar_converter=polar_converter, mask=mask_slice)
+        far_polar = _get_polar_mask(polar_converter=polar_converter, mask=far_slice)
+        hull_polar = _get_polar_mask(polar_converter=polar_converter, mask=hull_slice)
+
+        out_polar = _radial_fill_polar(
+            mask_polar,
+            far_polar,
+            hull_polar
+        )
+
+        out_slice = cv2.warpPolar(
+            out_polar.T.astype(np.uint8),
+            dsize=(x, z),
+            center=(center[1], center[0]),
+            maxRadius=maxRadius,
+            flags=cv2.WARP_POLAR_LINEAR | cv2.WARP_INVERSE_MAP | cv2.WARP_FILL_OUTLIERS
+        )
+
+        heart_segmentation[:, y_i, :] = out_slice
+    
+    return heart_segmentation
+
 def run_for_patient(patient_dir):
     output_dir = os.path.join(patient_dir, "heart_muscle_data")
     os.makedirs(output_dir, exist_ok=True)
 
     mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
     mask = mask.astype(bool)
+    nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "nnunet_mask.seg.nrrd"))
 
     mask = _fill_internal_holes(mask=mask)
     boundary_mask = _get_mask_boundary(mask=mask)
@@ -171,6 +255,14 @@ def run_for_patient(patient_dir):
     far_mask = _get_relevant_points_mask(
         mask_b=boundary_mask,
         ch_b=hull_b
+    )
+
+    print("segmenting muscles")
+    muscle_mask = segment_muscles(
+        mask=mask,
+        nnunet_mask=nnunet_mask,
+        far_mask=far_mask,
+        hull_mask=rolling_ball_hull
     )
 
     utils.save_data(
@@ -203,11 +295,23 @@ def run_for_patient(patient_dir):
         segment_name="rolling_ball_hull_boundary"
     )
 
+    utils.save_data(
+        data=muscle_mask,
+        ref_sitk=mask_sitk,
+        output_dir=output_dir,
+        name="muscle_mask",
+        is_mask=True,
+        color="0.6 0.2 0.8",
+        segment_name="muscle_mask"
+    )
+
 def main():
-    dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output_hm")
+    dir = os.path.join(ROOT_DIR, "streaking_viewer_output")
     for patient_id in sorted(os.listdir(dir)):
+        patient_id = "patient_0001"
         print(patient_id)
         run_for_patient(patient_dir=os.path.join(dir, patient_id))
+        return
 
     # patient_id = "patient_0008"
     # output_dir = os.path.join("streaking_viewer_output", patient_id)
