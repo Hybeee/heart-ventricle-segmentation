@@ -308,10 +308,8 @@ def run_for_patient(patient_dir):
 def main():
     dir = os.path.join(ROOT_DIR, "streaking_viewer_output")
     for patient_id in sorted(os.listdir(dir)):
-        patient_id = "patient_0001"
         print(patient_id)
         run_for_patient(patient_dir=os.path.join(dir, patient_id))
-        return
 
     # patient_id = "patient_0008"
     # output_dir = os.path.join("streaking_viewer_output", patient_id)
