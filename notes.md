@@ -894,4 +894,9 @@ streaking:
     - itt is az a lenyeg, hogy megnezzek, hogy mennyi sugarzas eri az LV-t/sziv reszeit -> kell a szegmentacio
 
 # heart muscle segmentation initial alg eval (uj)
-- patient_0004: erdekes, streaking elrontja. top3 mar valszeg jo lenne egyebkent volume szempontjabol
+- csikossag: a konstrukcionak koszonhetoen nehany helyen csikok jelennek meg. Ilyenkor pl. van 5 szomszedos pixel, ahol a hull-ig az utat nehanyszor blokkolja az eredeti maszk szele, nehanyszor meg nem -> csikok.
+- patienet_0004: itt 4 nagy komponens is van. Emiatt pl. kellene valamilyen prior (pl.: kb. lokacioja az izmoknak)
+- patient_0006: ez meg egy eset, ahol az LV szegmentacio alulszegmental -> ez kihatassal van az izomzszegmentaciora is
+- patient_0007: itt is egy kicsit pontatlanabb (bar orvosehoz hasonlo) a kimeneti maszk, amely kihat az izmok szegmentaciojara
+- patient_0011: erdekesebb (foleg az alsobb izom)
+- patient_0013: az egesz felvetel sajnos rossz, igy itt LV maszk ~nnU-Net maszk -> a bazisnal levo bemelyedest veszi az algoritmus szivizomnak

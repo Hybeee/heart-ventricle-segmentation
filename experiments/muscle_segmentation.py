@@ -209,7 +209,6 @@ def segment_muscles(mask, nnunet_mask, far_mask, hull_mask):
             flags=cv2.WARP_POLAR_LINEAR
         )
 
-
         mask_polar = _get_polar_mask( polar_converter=polar_converter, mask=mask_slice)
         far_polar = _get_polar_mask(polar_converter=polar_converter, mask=far_slice)
         hull_polar = _get_polar_mask(polar_converter=polar_converter, mask=hull_slice)
