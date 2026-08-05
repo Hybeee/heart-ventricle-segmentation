@@ -31,7 +31,7 @@ def _create_polar_converter(center, ct):
     return polar_converter
 
 def _get_bbox_middle_slice_z(mask):
-    z_dim = mask.shape[0]
+    z_dim = mask.shape[1]
 
     for z in range(z_dim):
         if np.any(mask[z, :, :] == 1):
@@ -78,7 +78,7 @@ def lfp(pb, noisy_pb):
     plt.semilogy(np.abs(noisy_R), c='b', alpha=0.5)
     plt.show()
 
-    k = 4
+    k = 7
     Rf = np.zeros_like(noisy_R)
     Rf[:k] = noisy_R[:k]
     Rf[-k:] = noisy_R[-k:]
@@ -87,17 +87,32 @@ def lfp(pb, noisy_pb):
 
     return r_lfp
 
+def _get_cart_bp(bp, center):
+    rs = bp[:, 0].astype(float).copy()
+    thetas = bp[:, 1].astype(float).copy()
+    thetas = np.deg2rad(thetas)
+
+    xs = rs * np.cos(thetas)
+    ys = rs * np.sin(thetas)
+
+    cart_bp = center + np.stack((ys, xs), axis=-1)
+
+    return cart_bp
+
 def main():
+    patient_id = "patient_0002"
     ct = utils.scan_to_np_array(
-        "C:\\BME\\mester\\2_felev\\onlab_2\\code\\nhakni\\solution\\postproc_alg_vars_output_hm\\patient_0001\\ct.nii.gz"
+        f"C:\\BME\\mester\\2_felev\\onlab_2\\code\\nhakni\\solution\\postproc_alg_vars_output\\{patient_id}\\ct.nii.gz"
     )
     mask = utils.scan_to_np_array(
-        "C:\\BME\\mester\\2_felev\\onlab_2\\code\\nhakni\\solution\\postproc_alg_vars_output_hm\\patient_0001\\final_mask_nip.seg.nrrd"
+        f"C:\\BME\\mester\\2_felev\\onlab_2\\code\\nhakni\\solution\\postproc_alg_vars_output\\{patient_id}\\final_mask_nip.seg.nrrd"
     )
 
     z_start, z_middle, z_end = _get_bbox_middle_slice_z(mask=mask)
+    z_middle = 216
 
-    mask = mask[z_middle, :, :]
+    ct = np.flipud(ct[:, z_middle, :])
+    mask = np.flipud(mask[:, z_middle, :])
     center = utils.calculate_slice_center(slice=mask)
     polar_converter = _create_polar_converter(
         center=center,
@@ -109,8 +124,8 @@ def main():
 
     pb = utils.get_polar_boundary_points(polar_mask=polar_mask, theta_step_size=1)
 
-    noisy_pb = ripple(pb=pb)
-    noisy_pb = ripple(pb=noisy_pb, start=30, end=31)
+    noisy_pb = pb
+    # noisy_pb = ripple(pb=noisy_pb, start=30, end=31)
 
     lfp_pb = lfp(pb=pb, noisy_pb=noisy_pb)
 
@@ -143,6 +158,19 @@ def main():
     plt.xlim(0, w)
     plt.ylim(h, 0)
     plt.gca().set_aspect('equal')
+    plt.show()
+
+    cart_bp = _get_cart_bp(bp=lfp_pb, center=center)
+
+    plt.imshow(ct, cmap='gray')
+    plt.imshow(mask, cmap='gray', alpha=0.2)
+    plt.scatter(
+        cart_bp[:, 1],
+        cart_bp[:, 0],
+        s=1,
+        c='green',
+        alpha=0.5
+    )
     plt.show()
 
 if __name__ == "__main__":

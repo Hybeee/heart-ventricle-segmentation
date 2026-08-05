@@ -210,8 +210,8 @@ def main():
     # )
 
     _visualize_patient(
-        input_dir_name="vis_output_1",
-        patient_id="patient_0045"
+        input_dir_name="postproc_alg_vars_output",
+        patient_id="patient_0001"
     )
 
     # patients_to_process = []

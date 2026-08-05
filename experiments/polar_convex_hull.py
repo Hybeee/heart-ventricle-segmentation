@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.ndimage as ndimage
-import pyshtools as pysh
 
 import os
 import sys
@@ -38,8 +37,6 @@ def _get_mask_center(mask):
     return (int(zs.mean()), int(ys.mean()), int(xs.mean()))
 
 def _to_spherical(points, center, spacing):
-    print(points.shape)
-    print(spacing.shape)
     d = (points - center) * spacing # * spacing => phyiscal coordinates
     r = np.linalg.norm(d, axis=1)
     theta = np.arccos(np.clip(d[:, 0] / r, -1, 1))

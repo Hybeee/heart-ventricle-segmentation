@@ -43,15 +43,15 @@ class Viewer:
         self._init()
 
     def _get_bbox_middle_slice_z(self, mask):
-        z_dim = mask.shape[0]
+        z_dim = mask.shape[1]
 
         for z in range(z_dim):
-            if np.any(mask[z, :, :] == 1):
+            if np.any(mask[:, z, :] == 1):
                 z_start = z
                 break
 
         for z in reversed(range(z_dim)):
-            if np.any(mask[z, :, :] == 1):
+            if np.any(mask[:, z, :] == 1):
                 z_end = z
                 break
 
@@ -83,9 +83,9 @@ class Viewer:
         return polar_converter
 
     def _set_slice_data(self):
-        self.curr_ct_slice = self.ct[self.slice_index, :, :]
-        self.curr_mask_slice = self.mask[self.slice_index, :, :]
-        self.curr_nnunet_mask_slice = self.nnunet_mask[self.slice_index, :, :]
+        self.curr_ct_slice = np.flipud(self.ct[:, self.slice_index, :])
+        self.curr_mask_slice = np.flipud(self.mask[:, self.slice_index, :])
+        self.curr_nnunet_mask_slice = np.flipud(self.nnunet_mask[:, self.slice_index, :])
 
         try:
             self.slice_center = utils.calculate_slice_center(slice=self.curr_nnunet_mask_slice)
@@ -304,8 +304,8 @@ def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0005"
-    output_path = os.path.join("streaking_viewer_output", patient_id)
+    patient_id = "patient_0002"
+    output_path = os.path.join("postproc_alg_vars_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:
         results = json.load(f)
@@ -314,7 +314,8 @@ def main():
     ct = utils.scan_to_np_array(scan_path=os.path.join(output_path, "ct.nii.gz"))
     mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "mask.seg.nrrd"))
     mask_nip = utils.scan_to_np_array(scan_path=os.path.join(output_path, "final_mask_nip.seg.nrrd"))
-    nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "nnunet_mask.seg.nrrd"))
+    # nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(output_path, "nnunet_mask.seg.nrrd"))
+    nnunet_mask = mask_nip
 
     masks = [mask, mask_nip]
     mask_names = ["Orig", "PostProc"]
