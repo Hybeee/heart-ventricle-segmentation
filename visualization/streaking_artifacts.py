@@ -304,7 +304,7 @@ def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0002"
+    patient_id = "patient_0053"
     output_path = os.path.join("postproc_alg_vars_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:

@@ -34,12 +34,12 @@ def _get_bbox_middle_slice_z(mask):
     z_dim = mask.shape[1]
 
     for z in range(z_dim):
-        if np.any(mask[z, :, :] == 1):
+        if np.any(mask[:, z, :] == 1):
             z_start = z
             break
 
     for z in reversed(range(z_dim)):
-        if np.any(mask[z, :, :] == 1):
+        if np.any(mask[:, z, :] == 1):
             z_end = z
             break
 
@@ -100,7 +100,7 @@ def _get_cart_bp(bp, center):
     return cart_bp
 
 def main():
-    patient_id = "patient_0002"
+    patient_id = "patient_0008"
     ct = utils.scan_to_np_array(
         f"C:\\BME\\mester\\2_felev\\onlab_2\\code\\nhakni\\solution\\postproc_alg_vars_output\\{patient_id}\\ct.nii.gz"
     )
@@ -109,7 +109,7 @@ def main():
     )
 
     z_start, z_middle, z_end = _get_bbox_middle_slice_z(mask=mask)
-    z_middle = 216
+    z_middle = 229
 
     ct = np.flipud(ct[:, z_middle, :])
     mask = np.flipud(mask[:, z_middle, :])
@@ -163,12 +163,20 @@ def main():
     cart_bp = _get_cart_bp(bp=lfp_pb, center=center)
 
     plt.imshow(ct, cmap='gray')
-    plt.imshow(mask, cmap='gray', alpha=0.2)
+    plt.imshow(mask, cmap='Blues', alpha=0.2)
+    # plt.scatter(
+    #     cart_bp[:, 1],
+    #     cart_bp[:, 0],
+    #     s=1,
+    #     c='green',
+    #     alpha=0.5
+    # )
     plt.scatter(
-        cart_bp[:, 1],
-        cart_bp[:, 0],
-        s=1,
-        c='green',
+        center[1],
+        center[0],
+        s=3,
+        c='red',
+        marker='x',
         alpha=0.5
     )
     plt.show()
