@@ -60,8 +60,40 @@ def plot(ct, mask, orig_mask, out_path):
     plt.savefig(out_path)
     plt.close(fig)
 
-def _get_initial_level_set():
-    pass
+def _get_initial_level_set(mask, nnunet_mask, slice_spacing):
+    mode = CONFIG["initial_level_set"]
+
+    mask_sitk = sitk.GetImageFromArray(mask)
+    mask_sitk.SetSpacing(slice_spacing)
+
+    if mode == "mask":
+        signed_distance = sitk.SignedMaurerDistanceMap(
+            mask_sitk,
+            insideIsPositive=False,
+            squaredDistance=False,
+            useImageSpacing=True
+        )
+        initial_level_set = sitk.Cast(signed_distance, sitk.sitkFloat32)
+
+        return signed_distance, initial_level_set
+    elif mode == "nnunet":
+        mask_signed_distance = sitk.SignedMaurerDistanceMap(
+            mask_sitk,
+            insideIsPositive=False,
+            squaredDistance=False,
+            useImageSpacing=True
+        )
+
+        nnunet_sitk = sitk.GetImageFromArray(nnunet_mask)
+        nnunet_sitk.SetSpacing(slice_spacing)
+        nnunet_signed_distance = sitk.SignedMaurerDistanceMap(
+            nnunet_sitk,
+            insideIsPositive=False,
+            squaredDistance=False,
+            useImageSpacing=True
+        )
+        initial_level_set = sitk.Cast(nnunet_signed_distance, sitk.sitkFloat32)
+        return mask_signed_distance, initial_level_set
 
 def _get_edge_potential(ct, slice_spacing, sigma, initial_level_set, signed_distance):
     mode = CONFIG["edge_potential"]
@@ -69,12 +101,8 @@ def _get_edge_potential(ct, slice_spacing, sigma, initial_level_set, signed_dist
     signed_distance_np = sitk.GetArrayFromImage(signed_distance)
     if mode == "10-eps":
         edge_potential_np = 1.0 - np.exp(-np.abs(signed_distance_np) / sigma)
-        edge_potential = sitk.GetImageFromArray(edge_potential_np.astype(np.float32))
-        edge_potential.CopyInformation(initial_level_set)
     elif mode == "eps":    
         edge_potential_np = np.exp(-np.abs(signed_distance_np) / sigma)
-        edge_potential = sitk.GetImageFromArray(edge_potential_np.astype(np.float32))
-        edge_potential.CopyInformation(initial_level_set)
     elif mode == "grad":    
         ct_sitk = sitk.GetImageFromArray(ct)
         ct_sitk.SetSpacing(slice_spacing)
@@ -102,20 +130,16 @@ def _process_single_patient(data_dir, patient_id, cor_slice, case, out_dir):
     mask = fill_internal_holes(mask) 
     mask = get_largest_component(mask)
 
+    nnunet_mask = np.flipud(nnunet_mask[:, cor_slice, :])
+
     mask = mask.astype(np.uint8)
     orig_spacing = orig_mask_sitk.GetSpacing()
     slice_spacing = (orig_spacing[0], orig_spacing[2])
 
-    mask_sitk = sitk.GetImageFromArray(mask)
-    mask_sitk.SetSpacing(slice_spacing)
-
-    signed_distance = sitk.SignedMaurerDistanceMap(
-        mask_sitk,
-        insideIsPositive=False,
-        squaredDistance=False,
-        useImageSpacing=True
+    signed_distance, initial_level_set = _get_initial_level_set(
+        mask=mask,
+        nnunet_mask=nnunet_mask
     )
-    initial_level_set = sitk.Cast(signed_distance, sitk.sitkFloat32)
 
     edge_potential = _get_edge_potential(
         ct=ct,
@@ -166,7 +190,7 @@ def run_tests(data_dir):
         "curvature_scaling":   [0.5, 1.0, 2.0, 4.0, 10.0, 20.0],
         "advection_scaling":   [0.0, 0.5, 1.0, 2.0, 5.0],
         "propagation_scaling": [0.0, 0.1, 0.3, 0.5, 1.0, 2.0],
-        "sigma":               [1.0, 2.0, 4.0, 8.0, 12.0, 20.0, 30.0],
+        "sigma":               [1.0, 2.0, 4.0, 8.0, 12.0, 20.0, 30.0], # [0.3, 0.5, 1.0, 1.5, 2.0, 3.0],
         "max_rms_error":       [0.01, 0.001, 0.0001, 0.00001],
         "num_iterations":      [100, 300, 600, 1000, 2000],
     }
