@@ -14,8 +14,8 @@ if ROOT_DIR not in sys.path:
 import utils
 
 CONFIG = {
-    "initial_level_set": "mask",
-    "edge_potential": "10-eps"
+    "initial_level_set": "nnunet",
+    "edge_potential": "eps"
 }
 
 def _get_mask_boundary(mask):
@@ -46,7 +46,13 @@ def get_largest_component(mask):
     largest_label = np.argmax(sizes)
     return labels == largest_label
 
-def plot(ct, mask, orig_mask, out_path):
+def _get_minmaxs(ys, xs, padding):
+    y_min, y_max = ys.min() - padding, ys.max() + padding
+    x_min, x_max = xs.min() - padding, xs.max() + padding
+
+    return y_min, x_min, y_max, x_max
+
+def plot(ct, mask, orig_mask, out_path, padding=10):
     fig = plt.figure()
     plt.imshow(ct, cmap='gray')
     plt.imshow(mask, cmap='Blues', alpha=0.3)
@@ -55,6 +61,25 @@ def plot(ct, mask, orig_mask, out_path):
     boundary_mask = orig_mask - eroded_mask
     y_coords, x_coords = np.where(boundary_mask > 0)
     plt.scatter(x_coords, y_coords, s=2, c='red', marker='.')
+
+    m_ys, m_xs = np.where(mask > 0)
+    om_ys, om_xs = np.where(orig_mask > 0)
+
+    m_y_min, m_x_min, m_y_max, m_x_max = _get_minmaxs(m_ys, m_xs, padding)
+    om_y_min, om_x_min, om_y_max, om_x_max = _get_minmaxs(om_ys, om_xs, padding)
+
+    y_min = min(m_y_min, om_y_min)
+    y_max = max(m_y_max, om_y_max)
+    x_min = min(m_x_min, om_x_min)
+    x_max = max(m_x_max, om_x_max)
+
+    y_min = max(0, y_min)
+    y_max = min(ct.shape[0] - 1, y_max)
+    x_min = max(0, x_min)
+    x_max = min(ct.shape[1] - 1, x_max)
+
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_max, y_min)
 
     plt.axis('off')
     plt.savefig(out_path)
@@ -138,7 +163,8 @@ def _process_single_patient(data_dir, patient_id, cor_slice, case, out_dir):
 
     signed_distance, initial_level_set = _get_initial_level_set(
         mask=mask,
-        nnunet_mask=nnunet_mask
+        nnunet_mask=nnunet_mask,
+        slice_spacing=slice_spacing
     )
 
     edge_potential = _get_edge_potential(
@@ -151,8 +177,11 @@ def _process_single_patient(data_dir, patient_id, cor_slice, case, out_dir):
 
     active_contour = sitk.GeodesicActiveContourLevelSetImageFilter()
     active_contour.SetCurvatureScaling(case["curvature_scaling"])
-    active_contour.SetAdvectionScaling(case["advection_scaling"])  
-    active_contour.SetPropagationScaling(case["propagation_scaling"])
+    active_contour.SetAdvectionScaling(case["advection_scaling"])
+    propagation_scaling = case["propagation_scaling"]
+    if CONFIG["initial_level_set"] == "nnunet":
+        propagation_scaling = -1.0 * propagation_scaling
+    active_contour.SetPropagationScaling(propagation_scaling)
     active_contour.SetMaximumRMSError(case["max_rms_error"])
     active_contour.SetNumberOfIterations(case["num_iterations"])
 
@@ -181,7 +210,7 @@ def run_tests(data_dir):
         "curvature_scaling": 4.0,
         "advection_scaling": 1.0,
         "propagation_scaling": 0.3,
-        "sigma": 8.0,
+        "sigma": 1.0,
         "num_iterations": 600,
         "max_rms_error": 0.0001,
     }
@@ -190,17 +219,18 @@ def run_tests(data_dir):
         "curvature_scaling":   [0.5, 1.0, 2.0, 4.0, 10.0, 20.0],
         "advection_scaling":   [0.0, 0.5, 1.0, 2.0, 5.0],
         "propagation_scaling": [0.0, 0.1, 0.3, 0.5, 1.0, 2.0],
-        "sigma":               [1.0, 2.0, 4.0, 8.0, 12.0, 20.0, 30.0], # [0.3, 0.5, 1.0, 1.5, 2.0, 3.0],
+        # "sigma":               [1.0, 2.0, 4.0, 8.0, 12.0, 20.0, 30.0],
+        "sigma":              [0.3, 0.5, 1.0, 1.5, 2.0, 3.0],
         "max_rms_error":       [0.01, 0.001, 0.0001, 0.00001],
         "num_iterations":      [100, 300, 600, 1000, 2000],
     }
 
-    patients = ["patient_0001", "patient_0008", "patient_0019", "patient_0024"]
-    slices = [197, 229, 207, 203]
+    patients = ["patient_0001", "patient_0008", "patient_0019"]
+    slices = [197, 229, 207]
     test_cases = generate_test_cases(baseline=baseline, params=params)
 
     for patient_id, cor_slice in zip(patients, slices):
-        out_dir = os.path.join(ROOT_DIR, "snake_sweep_output_grad", patient_id)
+        out_dir = os.path.join(ROOT_DIR, f"snake_sweep_output_{CONFIG['initial_level_set']}_{CONFIG['edge_potential']}", patient_id)
         os.makedirs(out_dir, exist_ok=True)
 
         print(f"{patient_id}")
