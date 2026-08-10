@@ -15,7 +15,7 @@ import utils
 
 CONFIG = {
     "initial_level_set": "nnunet",
-    "edge_potential": "eps"
+    "edge_potential": "eps_and_grad"
 }
 
 def _get_mask_boundary(mask):
@@ -126,8 +126,6 @@ def _get_edge_potential(ct, slice_spacing, sigma, initial_level_set, signed_dist
     signed_distance_np = sitk.GetArrayFromImage(signed_distance)
     if mode == "10-eps":
         edge_potential_np = 1.0 - np.exp(-np.abs(signed_distance_np) / sigma)
-    elif mode == "eps":    
-        edge_potential_np = np.exp(-np.abs(signed_distance_np) / sigma)
     elif mode == "grad":    
         ct_sitk = sitk.GetImageFromArray(ct)
         ct_sitk.SetSpacing(slice_spacing)
@@ -137,6 +135,19 @@ def _get_edge_potential(ct, slice_spacing, sigma, initial_level_set, signed_dist
         )
         grad_map_np = sitk.GetArrayFromImage(gradient_magnitude)
         edge_potential_np = 1.0 / (1.0 + grad_map_np)
+    elif mode == "eps_and_grad":
+        eps_edge_potential_np = 1.0 - np.exp(-np.abs(signed_distance_np) / sigma)
+        
+        ct_sitk = sitk.GetImageFromArray(ct)
+        ct_sitk.SetSpacing(slice_spacing)
+        gradient_magnitude = sitk.GradientMagnitudeRecursiveGaussian(
+            ct_sitk,
+            sigma=sigma
+        )
+        grad_map_np = sitk.GetArrayFromImage(gradient_magnitude)
+        grad_edge_potential_np = 1.0 / (1.0 + grad_map_np)
+
+        edge_potential_np = eps_edge_potential_np * grad_edge_potential_np
 
     edge_potential = sitk.GetImageFromArray(edge_potential_np.astype(np.float32))
     edge_potential.CopyInformation(initial_level_set)
@@ -219,8 +230,7 @@ def run_tests(data_dir):
         "curvature_scaling":   [0.5, 1.0, 2.0, 4.0, 10.0, 20.0],
         "advection_scaling":   [0.0, 0.5, 1.0, 2.0, 5.0],
         "propagation_scaling": [0.0, 0.1, 0.3, 0.5, 1.0, 2.0],
-        # "sigma":               [1.0, 2.0, 4.0, 8.0, 12.0, 20.0, 30.0],
-        "sigma":              [0.3, 0.5, 1.0, 1.5, 2.0, 3.0],
+        "sigma":              [0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 20.0],
         "max_rms_error":       [0.01, 0.001, 0.0001, 0.00001],
         "num_iterations":      [100, 300, 600, 1000, 2000],
     }
