@@ -256,7 +256,7 @@ def _get_3d_mask(data_dir, patient_id):
         int(np.ceil(padding_mm / spacing_xyz[0]))
     ]
     mins, maxs = _get_bbox_with_padding(
-        mask=nnunet_mask, padding_voxels=padding_voxels
+        mask_np=nnunet_mask, padding_voxels=padding_voxels
     )
     z_min, y_min, x_min = mins
     z_max, y_max, x_max = maxs
@@ -334,7 +334,6 @@ def _get_3d_mask(data_dir, patient_id):
     start = time.time()
     final_binary_mask = np.zeros_like(mask, dtype=np.uint8)
     final_binary_mask[z_min:z_max, y_min:y_max, x_min:x_max] = roi_binary_mask
-
     utils.save_data(
         data=final_binary_mask,
         ref_sitk=orig_mask_sitk,
