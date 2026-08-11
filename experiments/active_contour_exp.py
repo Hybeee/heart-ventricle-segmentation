@@ -6,6 +6,7 @@ from scipy.ndimage import binary_erosion
 
 import os
 import sys
+import time
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -215,6 +216,98 @@ def generate_test_cases(baseline, params):
             cases.append(case)
 
     return cases
+
+def _get_3d_mask(data_dir, patient_id):
+    patient_dir = os.path.join(data_dir, patient_id)
+
+    params = {
+        "curvature_scaling": 4.0,
+        "advection_scaling": 1.0,
+        "propagation_scaling": -0.3,
+        "sigma": 2.0,
+        "num_iterations": 600,
+        "max_rms_error": 0.0001,
+    }
+
+    orig_mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+    nnunet_sitk, nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "nnunet_mask.seg.nrrd"), return_sitk=True)
+
+    times = []
+
+    print("Creating initial level set...")
+
+    print("\tMask signed distance...")
+    start = time.time()
+    signed_distance = sitk.SignedMaurerDistanceMap(
+        orig_mask_sitk,
+        insideIsPositive=False,
+        squaredDistance=False,
+        useImageSpacing=True
+    )
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print("\tInitial level set(nnU-Net)...")
+    start = time.time()
+    nnunet_signed_distance = sitk.SignedMaurerDistanceMap(
+        nnunet_sitk,
+        insideIsPositive=False,
+        squaredDistance=False,
+        useImageSpacing=True,
+    )
+    initial_level_set = sitk.Cast(nnunet_signed_distance, sitk.sitkFloat32)
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print("Creating edge potential...")
+    start = time.time()
+    signed_distance_np = sitk.GetArrayFromImage(signed_distance)
+    edge_potential_np = 1.0 - np.exp(-np.abs(signed_distance_np) / params["sigma"])
+    edge_potential = sitk.GetImageFromArray(edge_potential_np.astype(np.float32))
+    edge_potential.CopyInformation(initial_level_set)
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print("Initializing GAC...")
+    start = time.time()
+    active_contour = sitk.GeodesicActiveContourLevelSetImageFilter()
+    active_contour.SetCurvatureScaling(params["curvature_scaling"])
+    active_contour.SetAdvectionScaling(params["advection_scaling"])
+    active_contour.SetPropagationScaling(params)
+    active_contour.SetMaximumRMSError(params["max_rms_error"])
+    active_contour.SetNumberOfIterations(params["num_iterations"])
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print("Running GAC...")
+    start = time.time()
+    final_level_set = active_contour.Execute(initial_level_set, edge_potential)
+    final_level_set_np = sitk.GetArrayFromImage(final_level_set)
+    final_binary_mask = (final_level_set_np < 0).astype(np.uint8)
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print("Saving data...")
+    start = time.time()
+    utils.save_data(
+        data=final_binary_mask,
+        ref_sitk=orig_mask_sitk,
+        output_dir=patient_dir,
+        name="gac_mask",
+        is_mask=True,
+        color="1.0 0.2 0.2",
+        segment_name="gac_mask"
+    )
+    end = time.time()
+    times.append(end - start)
+    print(f"\tFinished in {(end - start):.4f}s")
+
+    print(f"Total runtime: {sum(times)}")
 
 def run_tests(data_dir):
     baseline = {
