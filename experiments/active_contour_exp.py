@@ -217,6 +217,18 @@ def generate_test_cases(baseline, params):
 
     return cases
 
+def _get_bbox_with_padding(mask_np, padding_voxels):
+    coords = np.argwhere(mask_np)
+
+    mins = coords.min(axis=0)
+    maxs = coords.max(axis=0) + 1
+
+    pad = np.asarray(padding_voxels)
+    mins = np.maximum(mins - pad, 0)
+    maxs = np.minimum(maxs + pad, np.array(mask_np.shape))
+
+    return mins, maxs
+
 def _get_3d_mask(data_dir, patient_id):
     patient_dir = os.path.join(data_dir, patient_id)
 
@@ -234,12 +246,38 @@ def _get_3d_mask(data_dir, patient_id):
 
     times = []
 
+    print("Cropping to ROI...")
+    start = time.time()
+    padding_mm = 5.0
+    spacing_xyz = orig_mask_sitk.GetSpacing()
+    padding_voxels = [
+        int(np.ceil(padding_mm / spacing_xyz[2])),
+        int(np.ceil(padding_mm / spacing_xyz[1])),
+        int(np.ceil(padding_mm / spacing_xyz[0]))
+    ]
+    mins, maxs = _get_bbox_with_padding(
+        mask=nnunet_mask, padding_voxels=padding_voxels
+    )
+    z_min, y_min, x_min = mins
+    z_max, y_max, x_max = maxs
+
+    roi_index = [int(x_min), int(y_min), int(z_min)]
+    roi_size = [int(x_max - x_min), int(y_max - y_min), int(z_max - z_min)]
+
+    orig_mask_sitk_roi = sitk.RegionOfInterest(orig_mask_sitk, roi_size, roi_index)
+    nnunet_sitk_roi = sitk.RegionOfInterest(nnunet_sitk, roi_size, roi_index)
+
+    end = time.time()
+    print(f"\tOriginal shape: {mask.shape}")
+    print(f"\tROI shape: {(z_max - z_min, y_max - y_min, x_max - x_min)}")
+    print(f"\tFinished in {(end - start):.4f}s")
+
     print("Creating initial level set...")
 
     print("\tMask signed distance...")
     start = time.time()
     signed_distance = sitk.SignedMaurerDistanceMap(
-        orig_mask_sitk,
+        orig_mask_sitk_roi,
         insideIsPositive=False,
         squaredDistance=False,
         useImageSpacing=True
@@ -251,7 +289,7 @@ def _get_3d_mask(data_dir, patient_id):
     print("\tInitial level set(nnU-Net)...")
     start = time.time()
     nnunet_signed_distance = sitk.SignedMaurerDistanceMap(
-        nnunet_sitk,
+        nnunet_sitk_roi,
         insideIsPositive=False,
         squaredDistance=False,
         useImageSpacing=True,
@@ -287,13 +325,16 @@ def _get_3d_mask(data_dir, patient_id):
     start = time.time()
     final_level_set = active_contour.Execute(initial_level_set, edge_potential)
     final_level_set_np = sitk.GetArrayFromImage(final_level_set)
-    final_binary_mask = (final_level_set_np < 0).astype(np.uint8)
+    roi_binary_mask = (final_level_set_np < 0).astype(np.uint8)
     end = time.time()
     times.append(end - start)
     print(f"\tFinished in {(end - start):.4f}s")
 
     print("Saving data...")
     start = time.time()
+    final_binary_mask = np.zeros_like(mask, dtype=np.uint8)
+    final_binary_mask[z_min:z_max, y_min:y_max, x_min:x_max] = roi_binary_mask
+
     utils.save_data(
         data=final_binary_mask,
         ref_sitk=orig_mask_sitk,
