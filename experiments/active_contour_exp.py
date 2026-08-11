@@ -276,7 +276,7 @@ def _get_3d_mask(data_dir, patient_id):
     active_contour = sitk.GeodesicActiveContourLevelSetImageFilter()
     active_contour.SetCurvatureScaling(params["curvature_scaling"])
     active_contour.SetAdvectionScaling(params["advection_scaling"])
-    active_contour.SetPropagationScaling(params)
+    active_contour.SetPropagationScaling(params["propagation_scaling"])
     active_contour.SetMaximumRMSError(params["max_rms_error"])
     active_contour.SetNumberOfIterations(params["num_iterations"])
     end = time.time()
