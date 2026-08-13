@@ -329,6 +329,8 @@ def _get_3d_mask(data_dir, patient_id):
     end = time.time()
     times.append(end - start)
     print(f"\tFinished in {(end - start):.4f}s")
+    print(f"\tNumber of iterations: {active_contour.GetElapsedIterations()}")
+    print(f"\tRMS change: {active_contour.GetRMSChange()}")
 
     print("Saving data...")
     start = time.time()
@@ -348,6 +350,14 @@ def _get_3d_mask(data_dir, patient_id):
     print(f"\tFinished in {(end - start):.4f}s")
 
     print(f"Total runtime: {sum(times)}")
+
+def _get_all_3d_masks(data_dir):
+    for patient_id in os.listdir(data_dir):
+        print(f"Processing patient: {patient_id}")
+
+        _get_3d_mask(data_dir=data_dir, patient_id=patient_id)
+
+        print()
 
 def run_tests(data_dir):
     baseline = {
