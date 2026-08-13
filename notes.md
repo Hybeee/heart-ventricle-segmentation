@@ -900,3 +900,30 @@ streaking:
 - patient_0007: itt is egy kicsit pontatlanabb (bar orvosehoz hasonlo) a kimeneti maszk, amely kihat az izmok szegmentaciojara
 - patient_0011: erdekesebb (foleg az alsobb izom)
 - patient_0013: az egesz felvetel sajnos rossz, igy itt LV maszk ~nnU-Net maszk -> a bazisnal levo bemelyedest veszi az algoritmus szivizomnak
+
+# GAC results
+## Iteration = 600
+
+Good = [
+    0.00583466894225208,
+    0.006134522475472044,
+    0.003916443297302188,
+    0.005437151289517944,
+    0.006384883379116556,
+    0.011260347942669113,
+    0.006217613093714369,
+    0.00525035744172067,
+    0.0032651365826050376
+]
+
+Bad = [
+    0.006450228110312331 -> solved by it=1000 -> 0.0037481215726663073,
+    0.009418549736376949 -> solved by it=1000 -> 0.006929965616764131,
+    0.010628983274365284 -> solved by it=1000 -> 0.005345717918157667,
+    0.009216783445011603 -> solved by it=1000 -> 0.006162242587107369,
+    0.009885407995642097 -> solved by it=1000 -> 0.004700550516098167,
+    0.00921984550995126 -> solved by it=1000 -> 0.005075389305418686,
+    0.010651032008657434 -> solved by it=1000 -> 0.005523734988170997,
+    0.013060930719920339 -> solved by it=1000 -> 0.006194549806624847,
+    0.012901150495513942 -> solved by it=1000 -> 0.004968553494689053
+]
