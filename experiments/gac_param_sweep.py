@@ -1,6 +1,8 @@
 import SimpleITK as sitk
 import numpy as np
 import scipy.ndimage as ndimage
+import re
+import json
 
 import os
 import sys
@@ -173,7 +175,6 @@ def _sweep_params(data_dir, output_dir):
         os.makedirs(curr_output_dir, exist_ok=True)
 
         _process_patient(patient_dir, curr_output_dir, param_sets)
-        return
 
 def _get_dice_score(mask1, mask2):
     mask1 = mask1.astype(bool)
@@ -184,27 +185,125 @@ def _get_dice_score(mask1, mask2):
 
     return (2.0 * intersection) / total if total > 0 else 1.0
 
-def _flag_low_dice(output_dir, dice_threshold=0.85):
+def _flag_low_dice(output_dir):
     baseline_mask = utils.scan_to_np_array(os.path.join(output_dir, "baseline.seg.nrrd"))
 
     param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
 
-    for param_name in param_names:
-        print(f"Flagging {param_name} instance...")
+    records = []
 
+    for param_name in param_names:
         param_dir = os.path.join(output_dir, param_name)
         for mask_res_name in sorted(os.listdir(param_dir)):
             mask_res = utils.scan_to_np_array(os.path.join(param_dir, mask_res_name))
             dice = _get_dice_score(baseline_mask, mask_res)
 
-            if dice < dice_threshold:
-                print(f"LOW DICE SCORE for {mask_res_name}: {dice}")
+            value = float(mask_res_name[len(param_name) + 1:-len(".seg.nrrd")])
+            
+            records.append({
+                "param_name": param_name,
+                "value": value,
+                "dice": float(dice),
+                "passed": bool(dice >= dice_threshold)
+            })
+
+    out_path = os.path.join(output_dir, "dice_results.json")
+    with open(out_path, "w") as f:
+        json.dump(records, f, indent=2)
+
+def _get_param_interval(records, param_name, baseline_value, dice_threshold):
+    sub = sorted(
+        (r["value"], r["dice"]) for r in records if r["param_name"] == param_name
+    )
+    values = [v for v, _ in sub]
+    dices = [d for _, d in sub]
+
+    if not values:
+        return None, None
+    
+    baseline_idx = np.searchsorted(values, baseline_value)
+
+    lower = values[0]
+    for i in range(baseline_idx - 1, -1, -1):
+        if dices[i] < dice_threshold:
+            lower = values[i + 1] if i + 1 <= baseline_idx - 1 else baseline_value
+            break
+    
+    upper = values[-1]
+    for i in range(baseline_idx, len(values)):
+        if dices[i] < dice_threshold:
+            upper = values[i - 1] if i - 1 >= baseline_idx else baseline_value
+            break
+    
+    return lower, upper
+
+def _load_dice_records(patient_output_dir):
+    path = os.path.join(patient_output_dir, "dice_results.json")
+    with open(path) as f:
+        return json.load(f)
+
+def _get_all_param_intervals(patient_output_dir, param_names, baseline=BASELINE, dice_threshold=0.95):
+    records = _load_dice_records(patient_output_dir)
+
+    intervals = {}
+    for param_name in param_names:
+        lower, upper = _get_param_interval(records, param_name, baseline[param_name], dice_threshold)
+        if lower is None or upper is None:
+            print(f"WARNING: {patient_output_dir} has no interval data for {param_name}")
+            continue
+        intervals[param_name] = [lower, upper]
+    
+    return intervals
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     output_dir = os.path.join(ROOT_DIR, "gac_param_sweep_output")
 
-    _sweep_params(data_dir, output_dir)
+    # _sweep_params(data_dir, output_dir)
+
+    skip_patient_ids = [
+        "patient_0002",
+        "patient_0006",
+        "patient_0008",
+        "patient_0009",
+        "patient_0010",
+        "patient_0012",
+        "patient_0013",
+        "patient_0017", # NAGYON ERZEKENY A PROPAGATION SCALINGRE ES EGYEBKENT A TOBBIRE IS
+        "patient_0019",
+        "patient_0020",
+        "patient_0021",
+        "patient_0022"
+    ]
+
+    # for patient_id in sorted(os.listdir(output_dir)):
+    #     print(patient_id)
+    #     if patient_id in skip_patient_ids:
+    #         continue
+
+    #     _flag_low_dice(
+    #         output_dir=os.path.join(output_dir, patient_id)
+    #     )
+
+    #     if patient_id == "patient_0018":
+    #         break
+
+    param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
+    all_intervals = {p: [] for p in param_names}
+    for patient_id in sorted(os.listdir(output_dir)):
+        if patient_id in skip_patient_ids:
+            continue
+        
+        patient_dir = os.path.join(output_dir, patient_id)
+        intervals = _get_all_param_intervals(patient_dir, param_names)
+        for param_name, (lower, upper) in intervals.items():
+            all_intervals[param_name].append((lower, upper))
+    
+    for param_name, bounds in all_intervals.items():
+        arr = np.array(bounds)
+        global_lower = arr[:, 0].max()
+        global_upper = arr[:, 1].min()
+        print(f"{param_name.upper()}: {global_lower} - {global_upper}")
 
 if __name__ == "__main__":
     main()
