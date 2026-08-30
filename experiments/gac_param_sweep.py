@@ -142,9 +142,9 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
 
 def _build_param_sets():
     param_sets = {
-        "curvature_scaling": np.geomspace(0.1, 40, num=9),
-        "advection_scaling": np.geomspace(0.05, 10, num=9),
-        "propagation_scaling": np.append(-np.geomspace(0.01, 5, num=8), [0.0, 0.3]),
+        "curvature_scaling": np.geomspace(0.5, 40, num=9),
+        "advection_scaling": np.geomspace(0.5, 40, num=9),
+        "propagation_scaling": np.append(-np.geomspace(0.01, 30, num=8), [0.0, 0.3]),
         "sigma": np.geomspace(0.25, 500, num=7)
     }
 
@@ -160,7 +160,7 @@ def _sweep_params(data_dir, output_dir):
         print(f"\t{k}: {v}")
     print("==============")
 
-    for patient_id in os.listdir(data_dir):
+    for patient_id in sorted(os.listdir(data_dir)):
         print(f"Processing {patient_id}...")
         patient_dir = os.path.join(data_dir, patient_id)
         curr_output_dir = os.path.join(output_dir, patient_id)
