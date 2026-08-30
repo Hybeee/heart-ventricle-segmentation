@@ -168,7 +168,31 @@ def _sweep_params(data_dir, output_dir):
 
         _process_patient(patient_dir, curr_output_dir, param_sets)
         return
-        
+
+def _get_dice_score(mask1, mask2):
+    mask1 = mask1.astype(bool)
+    mask2 = mask2.astype(bool)
+
+    intersection = np.logical_and(mask1, mask2).sum()
+    total = mask1.sum() + mask2.sum()
+
+    return (2.0 * intersection) / total if total > 0 else 1.0
+
+def _flag_low_dice(output_dir, dice_threshold=0.85):
+    baseline_mask = utils.scan_to_np_array(os.path.join(output_dir, "baseline.seg.nrrd"))
+
+    param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
+
+    for param_name in param_names:
+        print(f"Flagging {param_name} instance...")
+
+        param_dir = os.path.join(output_dir, param_name)
+        for mask_res_name in sorted(os.listdir(param_dir)):
+            mask_res = utils.scan_to_np_array(os.path.join(param_dir, mask_res_name))
+            dice = _get_dice_score(baseline_mask, mask_res)
+
+            if dice < dice_threshold:
+                print(f"LOW DICE SCORE for {mask_res_name}: {dice}")
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
