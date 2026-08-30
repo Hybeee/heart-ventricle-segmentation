@@ -439,6 +439,7 @@ def _segment_muscle(data_dir, patient_id):
     )
 
 
+
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     patient_id = "patient_0001"
