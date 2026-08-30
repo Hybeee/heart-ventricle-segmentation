@@ -2,7 +2,7 @@ import SimpleITK as sitk
 import numpy as np
 import scipy.ndimage as ndimage
 import matplotlib.pyplot as plt
-from scipy.ndimage import binary_erosion
+from scipy.ndimage import binary_erosion, label
 
 import os
 import sys
@@ -29,8 +29,10 @@ def _get_mask_boundary(mask):
 
     return boundary_mask, points
 
-def fill_internal_holes(mask):
+def fill_internal_holes(mask, dimensions=2):
     se = np.ones((3, 3))
+    if dimensions == 3:
+        se = np.ones((3, 3, 3))
 
     mask_closed = ndimage.binary_closing(mask, structure=se)
     mask_closed_eroded = ndimage.binary_erosion(mask_closed, structure=se)
@@ -397,12 +399,57 @@ def run_tests(data_dir):
                 out_dir=out_dir
             )
 
+def _segment_muscle(data_dir, patient_id):
+    patient_dir = os.path.join(data_dir, patient_id)
+    output_dir = os.path.join(patient_dir, "gac_heart_segmentation")
+    os.makedirs(output_dir, exist_ok=True)
+
+    mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+    mask = mask.astype(bool)
+    mask = fill_internal_holes(mask=mask, dimensions=3)
+    
+    gac_mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "gac_mask_1000.seg.nrrd"))
+    gac_mask = gac_mask.astype(bool)
+
+    initial_muscles = gac_mask & ~mask
+    labeled, n_components = ndimage.label(initial_muscles)
+    components, counts = np.unique(labeled[labeled > 0], return_counts=True)
+    top2_idx = np.argsort(counts)[-2:]
+    top2_components = components[top2_idx]
+    muscle_mask = np.isin(labeled, top2_components)
+
+    utils.save_data(
+        data=initial_muscles,
+        ref_sitk=mask_sitk,
+        output_dir=output_dir,
+        name="initial_muscles",
+        is_mask=True,
+        color="1.0 0.2 0.2",
+        segment_name="initial_muscles"
+    )
+
+    utils.save_data(
+        data=muscle_mask,
+        ref_sitk=mask_sitk,
+        output_dir=output_dir,
+        name="papilarry_muscles",
+        is_mask=True,
+        color="0.2 0.8 0.5",
+        segment_name="papillary_muscles"
+    )
+
+
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     patient_id = "patient_0001"
 
     # _process_single_patient(data_dir, patient_id)
-    run_tests(data_dir=data_dir)
+    # run_tests(data_dir=data_dir)
+
+    _segment_muscle(
+        data_dir=data_dir,
+        patient_id=patient_id
+    )
 
 if __name__ == "__main__":
     main()

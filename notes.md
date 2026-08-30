@@ -927,3 +927,7 @@ Bad = [
     0.013060930719920339 -> solved by it=1000 -> 0.006194549806624847,
     0.012901150495513942 -> solved by it=1000 -> 0.004968553494689053
 ]
+
+NOTE:
+- it=1000 accurately fit on LV mask - patient_0007
+- not perfect on patient_0008 either

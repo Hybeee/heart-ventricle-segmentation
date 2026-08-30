@@ -10,6 +10,18 @@ import os
 import json
 import multiprocessing as mp
 
+def _fill_internal_holes(mask):
+    se_26_connectivity = np.ones((3, 3, 3))
+    connected_components, _ = ndimage.label(~mask, se_26_connectivity)
+
+    components, component_counts = np.unique(connected_components, return_counts=True)
+
+    max_component = components[np.argmax(component_counts)]
+
+    filled_mask = mask | (connected_components != max_component)
+
+    return filled_mask
+
 def _get_artifact_center(ct):
     threshold = 2000
 
@@ -26,10 +38,11 @@ def _get_artifact_center(ct):
 
 class Viewer:
     def __init__(self, ct, masks, mask_names, nnunet_mask, sigma, mode):
+        filled_masks = [_fill_internal_holes(mask=mask) for mask in masks]
         self.ct = ct
-        self.masks = masks
+        self.masks = filled_masks
         self.mask_index = 0
-        self.mask = masks[0]
+        self.mask = filled_masks[0]
         self.mask_names = np.array(mask_names)
         self.nnunet_mask = nnunet_mask
         self.sigma = sigma
@@ -304,7 +317,7 @@ def launch_viewer(ct, masks, mask_names, nnunet_mask, sigma, mode):
     viewer.view()
 
 def main():
-    patient_id = "patient_0053"
+    patient_id = "patient_0015"
     output_path = os.path.join("postproc_alg_vars_output", patient_id)
 
     with open(os.path.join(output_path, "results.json"), 'r') as f:
