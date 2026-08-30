@@ -20,6 +20,13 @@ BASELINE = {
     "num_iterations": 600,
     "max_rms_error": 0.0001,
 }
+PARAM_COLORS = {
+    "baseline": "0.6 0.6 0.6",
+    "curvature_scaling": "0.85 0.1 0.1",
+    "advection_scaling": "0.1 0.45 0.85",
+    "propagation_scaling": "0.15 0.65 0.25",
+    "sigma": "0.9 0.6 0.0",
+}
 
 def _get_bbox_with_padding(mask_np, padding_voxels):
     coords = np.argwhere(mask_np)
@@ -103,7 +110,7 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
         output_dir=output_dir,
         name=name,
         is_mask=True,
-        color="1.0 0.2 0.2",
+        color=PARAM_COLORS['baseline'],
         segment_name=name
     )
 
@@ -114,8 +121,8 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
         params = BASELINE.copy()
 
         param_values = param_sets[param_name]
+        start = time.time()
         for param_value in param_values:
-            start = time.time()
             params[param_name] = param_value
 
             roi_binary_mask = _run_gac(
@@ -133,18 +140,17 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
                 output_dir=curr_output_dir,
                 name=name,
                 is_mask=True,
-                color="1.0 0.2 0.2",
+                color=PARAM_COLORS[param_name],
                 segment_name=name
             )
-            end = time.time()
-            print(f"\tSwept {param_name} in {(end-start):.4f}s")
-
+        end = time.time()
+        print(f"\tSwept {param_name} in {(end-start):.4f}s")
 
 def _build_param_sets():
     param_sets = {
-        "curvature_scaling": np.geomspace(0.5, 40, num=9),
-        "advection_scaling": np.geomspace(0.5, 40, num=9),
-        "propagation_scaling": np.append(-np.geomspace(0.01, 30, num=8), [0.0, 0.3]),
+        "curvature_scaling": np.geomspace(0.5, 80, num=9),
+        "advection_scaling": np.geomspace(0.5, 80, num=9),
+        "propagation_scaling": np.append(-np.geomspace(0.5, 60, num=8), [0.0, 0.3]),
         "sigma": np.geomspace(0.25, 500, num=7)
     }
 
@@ -196,7 +202,7 @@ def _flag_low_dice(output_dir, dice_threshold=0.85):
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    output_dir = os.path.join(ROOT_DIR, "gac_param_sweep")
+    output_dir = os.path.join(ROOT_DIR, "gac_param_sweep_output")
 
     _sweep_params(data_dir, output_dir)
 
