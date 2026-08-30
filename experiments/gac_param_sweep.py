@@ -185,7 +185,7 @@ def _get_dice_score(mask1, mask2):
 
     return (2.0 * intersection) / total if total > 0 else 1.0
 
-def _flag_low_dice(output_dir):
+def _flag_low_dice(output_dir, dice_threshold):
     baseline_mask = utils.scan_to_np_array(os.path.join(output_dir, "baseline.seg.nrrd"))
 
     param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
@@ -282,7 +282,8 @@ def main():
     #         continue
 
     #     _flag_low_dice(
-    #         output_dir=os.path.join(output_dir, patient_id)
+    #         output_dir=os.path.join(output_dir, patient_id),
+    #         dice_threshold=0.95
     #     )
 
     #     if patient_id == "patient_0018":
