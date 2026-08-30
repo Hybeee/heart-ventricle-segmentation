@@ -175,3 +175,6 @@ def main():
     output_dir = os.path.join(ROOT_DIR, "gac_param_sweep")
 
     _sweep_params(data_dir, output_dir)
+
+if __name__ == "__main__":
+    main()
