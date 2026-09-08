@@ -19,7 +19,7 @@ BASELINE = {
     "advection_scaling": 1.0,
     "propagation_scaling": -0.3,
     "sigma": 2.0,
-    "num_iterations": 600,
+    "num_iterations": 5000,
     "max_rms_error": 0.0001,
 }
 PARAM_COLORS = {
@@ -54,14 +54,30 @@ def _run_gac(signed_distance, initial_level_set, params):
     active_contour.SetPropagationScaling(params["propagation_scaling"])
     active_contour.SetMaximumRMSError(params["max_rms_error"])
     active_contour.SetNumberOfIterations(params["num_iterations"])
-
+    
+    start = time.time()
     final_level_set = active_contour.Execute(initial_level_set, edge_potential)
+    end = time.time()
+
     final_level_set_np = sitk.GetArrayFromImage(final_level_set)
     roi_binary_mask = (final_level_set_np < 0).astype(np.uint8)
 
-    return roi_binary_mask
+    num_of_it = active_contour.GetElapsedIterations()
+    rms_change = active_contour.GetRMSChange()
+
+    data = {
+        "num_of_it": int(num_of_it),
+        "rms_change": float(rms_change),
+        "time": f"{(end - start):.4f}"
+    }
+
+    return roi_binary_mask, data
 
 def _process_patient(patient_dir, output_dir, param_sets: dict):
+    sweep_data = {}
+    out_path = os.path.join(patient_dir, "sweep_data.json")
+    print(out_path)
+    
     orig_mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
     nnunet_sitk, nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(patient_dir, "nnunet_mask.seg.nrrd"), return_sitk=True)
 
@@ -98,11 +114,16 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
     )
     initial_level_set = sitk.Cast(nnunet_signed_distance, sitk.sitkFloat32)
 
-    roi_binary_mask = _run_gac(
+    roi_binary_mask, data = _run_gac(
         signed_distance=signed_distance,
         initial_level_set=initial_level_set,
         params=BASELINE
     )
+
+    sweep_data["BASELINE"] = {
+        "baseline": data
+    }
+
     final_binary_mask = np.zeros_like(mask, dtype=np.uint8)
     final_binary_mask[z_min:z_max, y_min:y_max, x_min:x_max] = roi_binary_mask
     name = "baseline"
@@ -117,6 +138,11 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
     )
 
     for param_name in param_sets.keys():
+        print(f"\tSweeping {param_name}...")
+
+        if sweep_data.get(param_name, None) is None:
+            sweep_data[param_name] = {}
+
         curr_output_dir = os.path.join(output_dir, param_name)
         os.makedirs(curr_output_dir, exist_ok=True)
 
@@ -127,11 +153,13 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
         for param_value in param_values:
             params[param_name] = param_value
 
-            roi_binary_mask = _run_gac(
+            roi_binary_mask, data = _run_gac(
                 signed_distance=signed_distance,
                 initial_level_set=initial_level_set,
                 params=params
             )
+
+            sweep_data[param_name][str(param_value)] = data
 
             final_binary_mask = np.zeros_like(mask, dtype=np.uint8)
             final_binary_mask[z_min:z_max, y_min:y_max, x_min:x_max] = roi_binary_mask
@@ -148,16 +176,20 @@ def _process_patient(patient_dir, output_dir, param_sets: dict):
         end = time.time()
         print(f"\tSwept {param_name} in {(end-start):.4f}s")
 
+    out_path = os.path.join(patient_dir, "sweep_data.json")
+    with open(out_path, "w") as f:
+        json.dump(sweep_data, f, indent=2)
+
 def _build_param_sets():
     param_sets = {
-        "curvature_scaling": np.geomspace(0.5, 80, num=9),
-        "advection_scaling": np.geomspace(0.5, 80, num=9),
-        "propagation_scaling": np.append(-np.geomspace(0.5, 60, num=8), [0.0, 0.3]),
+        "curvature_scaling": np.geomspace(0.5, 250, num=20),
+        "advection_scaling": np.geomspace(0.5, 250, num=20),
+        "propagation_scaling": np.append(-np.geomspace(0.5, 100, num=10), [0.0, 0.3]),
         "sigma": np.geomspace(0.25, 500, num=7)
     }
 
     return {k: sorted(v.tolist()) for k, v in param_sets.items()}
-
+    
 def _sweep_params(data_dir, output_dir):
 
     param_sets = _build_param_sets()
@@ -175,6 +207,7 @@ def _sweep_params(data_dir, output_dir):
         os.makedirs(curr_output_dir, exist_ok=True)
 
         _process_patient(patient_dir, curr_output_dir, param_sets)
+        return
 
 def _get_dice_score(mask1, mask2):
     mask1 = mask1.astype(bool)
@@ -185,8 +218,11 @@ def _get_dice_score(mask1, mask2):
 
     return (2.0 * intersection) / total if total > 0 else 1.0
 
-def _flag_low_dice(output_dir, dice_threshold):
+def _flag_low_dice(data_dir, output_dir, dice_threshold=0.95):
+    orig_mask = utils.scan_to_np_array(os.path.join(data_dir, "final_mask_nip.seg.nrrd"))
     baseline_mask = utils.scan_to_np_array(os.path.join(output_dir, "baseline.seg.nrrd"))
+    nnunet_mask = utils.scan_to_np_array(os.path.join(data_dir, "nnunet_mask.seg.nrrd"))
+
 
     param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
 
@@ -196,24 +232,29 @@ def _flag_low_dice(output_dir, dice_threshold):
         param_dir = os.path.join(output_dir, param_name)
         for mask_res_name in sorted(os.listdir(param_dir)):
             mask_res = utils.scan_to_np_array(os.path.join(param_dir, mask_res_name))
-            dice = _get_dice_score(baseline_mask, mask_res)
+            baseline_dice = _get_dice_score(baseline_mask, mask_res)
+            orig_dice = _get_dice_score(orig_mask, mask_res)
+            nnunet_dice = _get_dice_score(nnunet_mask, mask_res)
 
             value = float(mask_res_name[len(param_name) + 1:-len(".seg.nrrd")])
             
             records.append({
                 "param_name": param_name,
                 "value": value,
-                "dice": float(dice),
-                "passed": bool(dice >= dice_threshold)
+                "baseline_dice": float(baseline_dice),
+                "passed": bool(baseline_dice >= dice_threshold),
+                "orig_mask_dice": orig_dice,
+                "nnunet_dice": nnunet_dice
             })
 
     out_path = os.path.join(output_dir, "dice_results.json")
+    records = sorted(records, key=lambda x: (x["param_name"], float(x["value"])))
     with open(out_path, "w") as f:
         json.dump(records, f, indent=2)
 
 def _get_param_interval(records, param_name, baseline_value, dice_threshold):
     sub = sorted(
-        (r["value"], r["dice"]) for r in records if r["param_name"] == param_name
+        (r["value"], r["baseline_dice"]) for r in records if r["param_name"] == param_name
     )
     values = [v for v, _ in sub]
     dices = [d for _, d in sub]
@@ -255,13 +296,31 @@ def _get_all_param_intervals(patient_output_dir, param_names, baseline=BASELINE,
     
     return intervals
 
+def _copy_segmentations(source_dir, dest_dir):
+    import shutil
+
+    needed_data = [
+        "ct.nii.gz",
+        "final_mask_nip.seg.nrrd",
+        "nnunet_mask.seg.nrrd"
+    ]
+
+    for data in needed_data:
+        source = os.path.join(source_dir, data)
+        dest = os.path.join(dest_dir, data)
+
+        shutil.copyfile(source, dest)
+
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    output_dir = os.path.join(ROOT_DIR, "gac_param_sweep_output")
+    output_dir = os.path.join(ROOT_DIR, "gac_p1_r0_01_conv")
 
-    # _sweep_params(data_dir, output_dir)
+    _sweep_params(data_dir, output_dir)
+
+    return
 
     skip_patient_ids = [
+        "patient_0001", # excluded because of convergence testing
         "patient_0002",
         "patient_0006",
         "patient_0008",
@@ -282,20 +341,25 @@ def main():
     #         continue
 
     #     _flag_low_dice(
-    #         output_dir=os.path.join(output_dir, patient_id),
-    #         dice_threshold=0.95
+    #         data_dir=os.path.join(data_dir, patient_id),
+    #         output_dir=os.path.join(output_dir, patient_id)
     #     )
-
-    #     if patient_id == "patient_0018":
-    #         break
+    #     break
 
     param_names = ["curvature_scaling", "advection_scaling", "propagation_scaling", "sigma"]
     all_intervals = {p: [] for p in param_names}
     for patient_id in sorted(os.listdir(output_dir)):
+        print(patient_id)
+        # _copy_segmentations(
+        #     source_dir=os.path.join(data_dir, patient_id),
+        #     dest_dir=os.path.join(output_dir, patient_id)
+        # )
+
         if patient_id in skip_patient_ids:
             continue
         
         patient_dir = os.path.join(output_dir, patient_id)
+
         intervals = _get_all_param_intervals(patient_dir, param_names)
         for param_name, (lower, upper) in intervals.items():
             all_intervals[param_name].append((lower, upper))
