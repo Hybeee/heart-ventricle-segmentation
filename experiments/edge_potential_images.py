@@ -13,7 +13,7 @@ if ROOT_DIR not in sys.path:
 
 import utils
 
-SIGMAS = [0.5, 1.0, 2.5, 5.0, 10.0]
+SIGMAS = [0.5, 1.0, 2.0, 5.0, 10.0]
 
 def laplacian(signed_distance_np, sigma):
     return 1.0 - np.exp(-np.abs(signed_distance_np) / sigma)
@@ -107,7 +107,7 @@ def plot(curr_l_mask, curr_g_mask, slice_index, direction, dir_index):
     pad = 20
     epsilon = 1e-3
     below = np.where((l_profile < threshold - epsilon) | (g_profile < threshold - epsilon))[0]
-    
+
     if len(below) == 0:
         start, end = 0, len(l_profile)
     else:
