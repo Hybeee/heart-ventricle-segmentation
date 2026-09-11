@@ -137,7 +137,7 @@ def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     patient_id = "patient_0001"
 
-    output_dir = "gac_exp_output_ep_0"
+    output_dir = os.path.join(ROOT_DIR, "gac_exp_output_ep_0")
 
     _process_patient(
         data_dir=os.path.join(data_dir, patient_id),
