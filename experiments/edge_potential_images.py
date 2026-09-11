@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 import os
 import sys
-import time
 import shutil
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,6 +89,8 @@ def plot(curr_l_mask, curr_g_mask, slice_index, direction, dir_index):
 
     if direction.lower() == "row":
         try:
+            dir_index = l_coronal.shape[0] - dir_index
+
             l_profile = l_coronal[dir_index, :]
             g_profile = g_coronal[dir_index, :]
         except:
