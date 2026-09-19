@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+from skimage.measure import perimeter
 import matplotlib.colors as mcolors
 import numpy as np
 
@@ -149,13 +150,11 @@ class GACViewer:
         ax.clear()
 
         curr_set = self.mask_param_sets[self.param_set_index]
-        ratio = curr_set["curvature scaling"] / curr_set["propagation scaling"] if curr_set["propagation scaling"] != 0 else np.nan
+        ratio = curr_set["curvature scaling"] / curr_set["advection scaling"] if curr_set["propagation scaling"] != 0 else np.nan
         title = (
-            f"iteration={self.iterations[self.iteration_index]}\n"
-            + "\n".join(
-                f"{k}={v}"
-                for k, v in curr_set.items()
-            )
+            f"iteration={self.iterations[self.iteration_index]}"
+            + f"\nname={curr_set['name']}"
+            + f"\ncurv={curr_set['curvature scaling']}   prop={curr_set['propagation scaling']}   adv={curr_set.get('advection scaling', np.nan)}"
             + f"\nratio={ratio:.4f}"
         )
         ax.set_title(title)
@@ -182,18 +181,32 @@ class GACViewer:
         self._render()
         plt.show()
 
-def _load_iteration_data(gac_dir, it_dir_names, name, slice_index):
+def _get_mask_boundary_len(mask):
+    import scipy.ndimage as ndimage
+    mask_e = ndimage.binary_erosion(mask, structure=np.ones((3, 3)))
+    boundary = mask ^ mask_e
+    points = np.argwhere(boundary)
+
+    return len(points)
+
+def _load_iteration_data(gac_dir, it_dir_names, name, slice_index, value_type):
     data = []
 
     for it_dir in it_dir_names:
         mask_path = os.path.join(gac_dir, it_dir, f"{name}.seg.nrrd")
         mask = utils.scan_to_np_array(mask_path)
         mask = mask[:, slice_index, :]
-        data.append(np.sum(mask))
+
+        if value_type.lower() == "area":
+            data.append(np.sum(mask))
+        elif value_type.lower() == "length":
+            data.append(_get_mask_boundary_len(mask))
+        else:
+            raise ValueError(f"Unknown value type: value type={value_type}")
 
     return data
 
-def view_iteration_data(gac_dir, mask_param_sets, slice_index, seed_value=None):
+def view_iteration_data(gac_dir, mask_param_sets, slice_index, init_value=None, value_type="area"):
     it_dir_names = os.listdir(gac_dir)
     it_dir_names = sorted(it_dir_names, key=lambda d: int(d[2:]))
     iterations = [int(d[2:]) for d in it_dir_names]
@@ -205,7 +218,7 @@ def view_iteration_data(gac_dir, mask_param_sets, slice_index, seed_value=None):
         curv = mask_param_set["curvature scaling"]
         prop = mask_param_set["propagation scaling"]
 
-        values = _load_iteration_data(gac_dir, it_dir_names, name, slice_index)
+        values = _load_iteration_data(gac_dir, it_dir_names, name, slice_index, value_type)
 
         param_data[name] = {
             "values": values,
@@ -228,13 +241,13 @@ def view_iteration_data(gac_dir, mask_param_sets, slice_index, seed_value=None):
         ax.plot(iterations, d["values"], color="black", linestyle="--", linewidth=2,
                 label=f"{name} (prop=0, ratio=infinite)")
 
-    if seed_value is not None:
-        ax.axhline(seed_value, color="black", linestyle="--", linewidth=1, label="seed")
+    if init_value is not None:
+        ax.axhline(init_value, color="black", linestyle="--", linewidth=1, label="initial value")
         ax.legend()
 
-    ax.set_yscale("log")
+    ax.set_yscale("linear")
     ax.set_xlabel("Iteration")
-    ax.set_ylabel(f"Area - log scale")
+    ax.set_ylabel(value_type)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
@@ -276,27 +289,34 @@ def build_mask_param_sets(gac_dir):
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    gac_dir = os.path.join(ROOT_DIR, "gac_exp_output_ep_1")
+    gac_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_output")
 
-    patient_id = "patient_0001"
+    patient_id = "patient_0012"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 
     mask_param_sets = build_mask_param_sets(gac_dir=patient_gac_dir)
-    iterations = sorted(int(it_name[2:]) for it_name in os.listdir(patient_gac_dir))
+    iterations = sorted(int(it_name[2:]) for it_name in os.listdir(patient_gac_dir) if os.path.isdir(os.path.join(patient_gac_dir, it_name)))
 
-    ct=utils.scan_to_np_array(os.path.join(patient_data_dir, "ct.nii.gz"))
-    mask=utils.scan_to_np_array(os.path.join(patient_data_dir, "final_mask_nip.seg.nrrd"))
+    ct = utils.scan_to_np_array(os.path.join(patient_data_dir, "ct.nii.gz"))
+    mask = utils.scan_to_np_array(os.path.join(patient_data_dir, "final_mask_nip.seg.nrrd"))
 
     slice_index = 201
-    view_iteration_data(
-        gac_dir=patient_gac_dir,
-        mask_param_sets=mask_param_sets,
-        slice_index=slice_index,
-        seed_value=np.sum(mask[:, slice_index, :])
-    )
+    value_type = "area"
+    if value_type.lower() == "area":
+        init_value = np.sum(mask[:, slice_index, :])
+    elif value_type.lower() == "length":
+        init_value = None
+    else:
+        raise ValueError(f"Unknown value type: value type={value_type}")
 
-    return
+    # view_iteration_data(
+    #     gac_dir=patient_gac_dir,
+    #     mask_param_sets=mask_param_sets,
+    #     slice_index=slice_index,
+    #     init_value=init_value,
+    #     value_type=value_type
+    # )
 
     viewer = GACViewer(
         ct=ct,
