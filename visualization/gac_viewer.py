@@ -289,9 +289,9 @@ def build_mask_param_sets(gac_dir):
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    gac_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_output")
+    gac_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_convergence_output_p8")
 
-    patient_id = "patient_0012"
+    patient_id = "patient_0001"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 
