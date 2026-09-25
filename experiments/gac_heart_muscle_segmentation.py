@@ -11,7 +11,7 @@ if ROOT_DIR not in sys.path:
 import utils
 
 GAC_PARAMS = {
-    "curvature_scaling": 1.00,
+    "curvature_scaling": 2.5,
     "advection_scaling": 1.00,
     "propagation_scaling": 0.2976,
     "num_iterations": 1000,
@@ -21,7 +21,12 @@ GAC_PARAMS = {
 GAC_ITERATIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90,
         100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
         225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500,
-        550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+        550, 600, 650, 700, 750, 800, 850, 900, 950, 1000,
+        1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000,
+        3250, 3500, 3750, 4000, 4250, 4500, 4750, 5000,
+        5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000,
+        7250, 7500, 7750, 8000, 8250, 8500, 8750, 9000,
+        9250, 9500, 9750, 10000]
 
 def _fmt_param(value: float, decimals: int = 4):
     sign = "n" if value < 0 else ""
@@ -47,8 +52,12 @@ def _get_bbox_with_padding(mask_np, padding_voxels):
 
     return mins, maxs
 
-def _create_mask_hull(mask_sitk, mask, save_mask_history, out_dir):
-    params = GAC_PARAMS.copy()
+def _create_mask_hull(mask_sitk, mask, save_mask_history, out_dir, params=None):
+    if params is None:
+        params = GAC_PARAMS.copy()
+    else:
+        params = params
+
     iterations = GAC_ITERATIONS.copy()
 
     padding_mm = 5.0
@@ -144,19 +153,19 @@ def _create_mask_hull(mask_sitk, mask, save_mask_history, out_dir):
         data=final_binary_mask,
         ref_sitk=mask_sitk,
         output_dir=out_dir,
-        name="mask_hull",
+        name=f"mask_hull_{params['curvature_scaling']:.4f}",
         is_mask=True,
         color="0.1 0.45 0.8",
         segment_name="mask_hull"
     )
 
-def _process_patient(data_dir, out_dir, save_mask_history=True):
+def _process_patient(data_dir, out_dir, save_mask_history=True, params=None):
     os.makedirs(out_dir, exist_ok=True)
 
     mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
 
     start = time.time()
-    _create_mask_hull(mask_sitk, mask, save_mask_history, out_dir)
+    _create_mask_hull(mask_sitk, mask, save_mask_history, out_dir, params=params)
     end = time.time()
 
     print(f"\tHull created in {(end - start):.4f}s")
@@ -165,16 +174,39 @@ def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     patient_id = "patient_0001"
 
-    out_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_output")
+    out_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_convergence_output_quick_test")
     os.makedirs(out_dir, exist_ok=True)
 
-    for patient_id in sorted(os.listdir(data_dir)):
+    conv_patients = [
+        'patient_0006',
+        'patient_0008',
+        'patient_0009',
+        'patient_0010',
+        'patient_0011',
+        'patient_0012',
+        'patient_0014',
+        'patient_0016',
+        'patient_0017',
+        'patient_0019',
+        'patient_0020',
+        'patient_0021',
+        'patient_0022'
+    ]
+
+    conv_patients = ['patient_0009']
+
+    for patient_id in sorted(conv_patients):
         print(f"Processing {patient_id}...")
 
-        _process_patient(
-            data_dir=os.path.join(data_dir, patient_id),
-            out_dir=os.path.join(out_dir, patient_id)
-        )
+        for curv in [2.5, 3.0]:
+            params = GAC_PARAMS.copy()
+            params["curvature_scaling"] = curv
+
+            _process_patient(
+                data_dir=os.path.join(data_dir, patient_id),
+                out_dir=os.path.join(out_dir, patient_id),
+                params=params
+            )
 
 if __name__ == "__main__":
     main()

@@ -77,6 +77,17 @@ A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
 ![p8_2](gac_results_images/patient_0008_2.png)
 
 Tul nagy propagation scaling?
+Tesztel scaling-ek (curv=adv=1.0):
+- p0p0530 - 0
+- p0p0706 - 1
+- p0p0942 - 2
+- p0p1255 - 3
+- p0p1674 - 4
+- p0p2232 - 5
+- p0p2976 - 6
+
+Kisebb prop eseten is kb. ugyanabba az iranyba konvergalnak -> pl. 2232 eseten kb latszik mar hogy ha tovabb tudna menni, akkor kialakulna a gomb -> simitani kell -> adv=1.0, prop=0.2976, curv:
+- ...
 
 # patient_0009
 
@@ -88,6 +99,10 @@ TODO: TOBB ITERACIOIG FUTTATNI!!!!
 
 ![p9_1](gac_results_images/patient_0009_1.png)
 
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
 # patient_0010
 
 Ugyanugy kozelebb van az eredeti maszkhoz. Itt viszont nem tudom pontosan megallapitani, hogy konvergalt-e mar vagy sem.
@@ -95,6 +110,10 @@ Ugyanugy kozelebb van az eredeti maszkhoz. Itt viszont nem tudom pontosan megall
 TODO: TOBB ITERACIO
 
 ![p10_1](gac_results_images/patient_0010_1.png)
+
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
 
 # patient_0011
 
@@ -107,6 +126,10 @@ TODO: tobb iteracio
 
 Egyebkent nem biztos, hogy konvergalt, ez is erdekes lehet. A szivizom formaja/bemelyedese itt is mas. GT nehezen ertelmezheto/indokolhato. Inkabb csak a helyezete alapjan azonosithato
 
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
 # patient_0012
 
 Itt is elobb megall, viszont szerintem nem konvergalt.
@@ -114,6 +137,10 @@ Itt is elobb megall, viszont szerintem nem konvergalt.
 TODO: TOBB ITERACIO
 
 ![p12_1](gac_results_images/patient_0012_1.png)
+
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
 
 # patient_0013
 
@@ -127,6 +154,10 @@ TODO: Tobb iteracio, mert lehet, hogy nem konvergalt
 
 ![p14_1](gac_results_images/patient_0014_1.png)
 
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
 # patient_0015
 
 A ket maszk kb. ugyanaz.
@@ -139,11 +170,21 @@ Kicsit szerintem jobb, de egy pukli elkezdett megjelenni. Viszont konvergalt.
 
 TODO: tobb iteracio, hogy BIZTOS konvergalt-e
 
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
+
 # patient_0017
 
 Jo/jobb, mint a regi. Konvergalas kerdojeles
 
 TODO: tobb iteracio
+
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
 
 # patient_0018
 
@@ -159,6 +200,10 @@ Konvergenciat erdemes ellenorizni.
 
 TODO: tobb iteracio
 
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
+
 # patient_0020
 
 Alapvetoen jobb, meg a streaking ellen robosztusabb is (nem szegmental tul), viszont emiatt az egyik izomnal beesik;
@@ -169,11 +214,21 @@ Szinte biztos, hogy nem konvergalt (viszont lassan indul!)
 
 TODO: tobb iteracio
 
+## Tobb iteraciora futtatva:
+
+Rendesen konvergal!
+
+![p20_2](gac_results_images/patient_0020_2.png)
+
 # patient_0021
 
 Szerintem nem konvergalt
 
 TODO: tobb iteracio
+
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
 
 # patient_0022
 
@@ -184,3 +239,7 @@ Szukebben rajta van az eredeti maszkon, ami jo, viszont ez egy bizonyos szelet e
 Iteraciokat megvizsgalva o se biztos, hogy konvergalt;
 
 TODO: tobb iteracio
+
+## Tobb iteraciora futtatva:
+
+A ROI-hoz konvergal (vagy legalabbis 'kifolyik' a szivizom bemelyedesenel)
