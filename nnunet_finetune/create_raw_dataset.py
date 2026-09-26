@@ -20,6 +20,39 @@ def geometries_match(ct, mask, tol=1e-3):
         and ct.GetDirection() == mask.GetDirection()
     )
 
+def get_roi(mask_sitk):
+    mask = sitk.GetArrayFromImage(mask_sitk)
+    coords = np.argwhere(mask)
+
+    mins = coords.min(axis=0)
+    maxs = coords.max(axis=0)
+
+    # option A: padding LV bbox with bbox ratio
+    # ratio = 0.1
+    # diffs = maxs - mins
+    # pad = diffs * ratio
+
+    # option B: padding LV bbox with fix pad in mm
+    padding_mm = 5.0
+    spacing_xyz = mask_sitk.GetSpacing()
+    pad = [ # xyz -> zyx
+        int(np.ceil(padding_mm / spacing_xyz[2])),
+        int(np.ceil(padding_mm / spacing_xyz[1])),
+        int(np.ceil(padding_mm / spacing_xyz[0]))
+    ]
+
+    shape = np.array(mask.shape)
+    mins = np.clip(mins - pad, 0, shape - 1)
+    maxs = np.clip(maxs + pad, 0, shape - 1)
+
+    z_min, y_min, x_min = mins
+    z_max, y_max, x_max = maxs
+
+    roi_index = [int(x_min), int(y_min), int(z_min)]
+    roi_size = [int(x_max - x_min + 1), int(y_max - y_min + 1), int(z_max - z_min + 1)]
+
+    return roi_index, roi_size
+
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
     label_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_output")
