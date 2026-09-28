@@ -116,6 +116,7 @@ def main():
     data_root_dir = os.path.join(ROOT_DIR, "pipeline_output")
 
     for patient_id in sorted(os.listdir(data_root_dir)):
+        print(patient_id)
         data_dir = os.path.join(data_root_dir, patient_id)
 
         spacing, ct = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "ct.nii.gz"), return_spacing=True)
@@ -123,17 +124,15 @@ def main():
         doc_mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "doc_mask.seg.nrrd"))
         nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "nnunet_mask.seg.nrrd"))
         center = np.argwhere(final_mask > 0).mean(axis=0)
-
-        print("Dir deriv...")
+        
         dir_deriv_ct = get_3d_dir_derivs(
             ct=ct,
             center=center
         )
 
-        print("BDE...")
-        print(f'Final mask: {calculate_bde(mask=final_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
-        print(f'Doc mask: {calculate_bde(mask=doc_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
-        print(f'nnUNet mask: {calculate_bde(mask=nnunet_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        print(f'\tFinal mask: {calculate_bde(mask=final_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        print(f'\tDoc mask (GT): {calculate_bde(mask=doc_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        print(f'\tnnUNet mask (ROI): {calculate_bde(mask=nnunet_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
     
 if __name__ == "__main__":
     main()
