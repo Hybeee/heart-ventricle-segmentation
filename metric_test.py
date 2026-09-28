@@ -130,9 +130,15 @@ def main():
             center=center
         )
 
-        print(f'\tFinal mask: {calculate_bde(mask=final_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
-        print(f'\tDoc mask (GT): {calculate_bde(mask=doc_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
-        print(f'\tnnUNet mask (ROI): {calculate_bde(mask=nnunet_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        fm = calculate_bde(mask=final_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)
+        doc = calculate_bde(mask=doc_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)
+        nnunet = calculate_bde(mask=nnunet_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)
+
+        print(f"\tPredicted: {fm:.4f}")
+        print(f"\tGT: {doc:.4f}")
+        print(f"\tROI: {nnunet:.4f}")
+        print(f"\tDelta (predicted - GT): {(fm - doc):.4f} | Better: {(fm - doc < 0)}")
+
     
 if __name__ == "__main__":
     main()
