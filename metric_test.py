@@ -3,7 +3,7 @@ from scipy.ndimage import convolve, gaussian_filter, map_coordinates, binary_ero
 
 import os
 import sys
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
@@ -51,9 +51,8 @@ def get_3d_dir_derivs(ct, center, sigma=2.0):
 
     return dir_deriv_ct
 
-def _sample_at(volume, point):
-    coords = np.array(point).reshape(3, 1)
-    return map_coordinates(volume, coords, order=1, mode='nearest')[0]
+def _sample_at(volume, points):
+    return map_coordinates(volume, points.T, order=1, mode='nearest')
 
 def find_edges_along_rays(dir_deriv_ct, points, center, serach_radius=5.0, step=0.5):
     N = points.shape[0]
@@ -83,25 +82,58 @@ def _get_boundary_points(mask):
     boundary = mask & ~eroded
     return np.argwhere(boundary).astype(np.float64)
 
-def calculate_bde(mask, dir_deriv_ct, spacing):
+def calculate_bde(mask, dir_deriv_ct, spacing, center):
     boundary_points = _get_boundary_points(mask)
 
     edge_pts, vals = find_edges_along_rays(
         dir_deriv_ct=dir_deriv_ct,
         points=boundary_points,
-        center=np.argwhere(mask > 0).mean(axis=0),
+        center=center
     )
 
     diffs_mm = (edge_pts - boundary_points) * spacing
     dists = np.linalg.norm(diffs_mm, axis=1)
 
-    weights = np.clip()
+    neg = vals < 0
+    pos = ~neg
+    d_max = 5.0 * np.mean(spacing)
+
+    w = np.empty_like(vals, dtype=np.float64)
+    d = np.empty_like(vals, dtype=np.float64)
+
+    w[neg] = -vals[neg]
+    d[neg] = dists[neg]
+
+    w_ref = w[neg].mean() if neg.any() else 1.0
+    w[pos] = w_ref * (1.0 + vals[pos] / (np.abs(vals[neg]).mean() if neg.any() else 1.0))
+    d[pos] = d_max
+
+    bde = np.sum(w * d) / np.sum(w) if neg.any() else np.nan
+
+    return bde
 
 def main():
-    patient_id = "patient_0001"
-    data_dir = os.path.join(ROOT_DIR, patient_id)
+    data_root_dir = os.path.join(ROOT_DIR, "pipeline_output")
 
-    spacing, ct = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "ct.nii.gz"), return_spacing=True)
+    for patient_id in sorted(os.listdir(data_root_dir)):
+        data_dir = os.path.join(data_root_dir, patient_id)
 
+        spacing, ct = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "ct.nii.gz"), return_spacing=True)
+        final_mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "final_mask_nip.seg.nrrd"))
+        doc_mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "doc_mask.seg.nrrd"))
+        nnunet_mask = utils.scan_to_np_array(scan_path=os.path.join(data_dir, "nnunet_mask.seg.nrrd"))
+        center = np.argwhere(final_mask > 0).mean(axis=0)
+
+        print("Dir deriv...")
+        dir_deriv_ct = get_3d_dir_derivs(
+            ct=ct,
+            center=center
+        )
+
+        print("BDE...")
+        print(f'Final mask: {calculate_bde(mask=final_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        print(f'Doc mask: {calculate_bde(mask=doc_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+        print(f'nnUNet mask: {calculate_bde(mask=nnunet_mask, dir_deriv_ct=dir_deriv_ct, spacing=spacing, center=center)}')
+    
 if __name__ == "__main__":
     main()
