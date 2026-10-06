@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+from matplotlib.patches import Rectangle
 from skimage.measure import perimeter
 import matplotlib.colors as mcolors
 import numpy as np
@@ -171,6 +172,18 @@ class GACViewer:
             )
         ax.imshow(gac_mask_slice, cmap='Blues', alpha=self.alpha)
 
+        # z_min, y_min, x_min = [144, 137, 264]
+        # z_max, y_max, x_max = [250, 270, 365]
+
+        # Z = ct_slice.shape[0]
+        # if y_min <= self.slice_index < y_max:
+        #     ax.add_patch(Rectangle(
+        #         (x_min - 0.5, Z - z_max - 0.5),
+        #         x_max - x_min,
+        #         z_max - z_min,
+        #         fill=False, edgecolor='tab:orange', linewidth=1.5
+        #     ))
+
         if is_already_rendered:
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)
@@ -256,7 +269,7 @@ def view_iteration_data(gac_dir, mask_param_sets, slice_index, init_value=None, 
     fig.tight_layout()
     plt.show()
 
-def build_mask_param_sets(gac_dir):
+def build_mask_param_sets(gac_dir, iterations):
     param_names = {
         "c": "curvature scaling",
         "p": "propagation scaling",
@@ -264,9 +277,9 @@ def build_mask_param_sets(gac_dir):
     }
     mask_param_sets = []
 
-    it_dir = os.listdir(gac_dir)[0]
+    it_dir = str(iterations[30])
 
-    for mask_name in os.listdir(os.path.join(gac_dir, it_dir)):
+    for mask_name in os.listdir(os.path.join(gac_dir, f"it{it_dir}")):
         mask_param_set = {}
 
         mask_name = mask_name[:-9]
@@ -289,14 +302,18 @@ def build_mask_param_sets(gac_dir):
 
 def main():
     data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    gac_dir = os.path.join(ROOT_DIR, "heart_muscle_segmentation_convergence_output_quick_test")
+    gac_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_test")
 
-    patient_id = "patient_0008"
+    patient_id = "patient_0021"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 
-    mask_param_sets = build_mask_param_sets(gac_dir=patient_gac_dir)
-    iterations = sorted(int(it_name[2:]) for it_name in os.listdir(patient_gac_dir) if os.path.isdir(os.path.join(patient_gac_dir, it_name)))
+    iterations = sorted(
+        int(it_name[2:])
+        for it_name in os.listdir(patient_gac_dir)
+        if os.path.isdir(os.path.join(patient_gac_dir, it_name))
+        and it_name.startswith("it"))
+    mask_param_sets = build_mask_param_sets(gac_dir=patient_gac_dir, iterations=iterations)
 
     ct = utils.scan_to_np_array(os.path.join(patient_data_dir, "ct.nii.gz"))
     mask = utils.scan_to_np_array(os.path.join(patient_data_dir, "final_mask_nip.seg.nrrd"))
