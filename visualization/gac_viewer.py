@@ -301,10 +301,10 @@ def build_mask_param_sets(gac_dir, iterations):
 
 
 def main():
-    data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    gac_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_test")
+    data_dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output")
+    gac_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_full")
 
-    patient_id = "patient_0021"
+    patient_id = "patient_0030"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 

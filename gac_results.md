@@ -677,3 +677,227 @@ Output:
 
 Note: Good, de itt is a bubble dolog talan feljon? Bar itt szerintem foleg nem rossz.
 ![p22_agac_res](gac_results_images/patient_0022_agac_res.png)
+
+## patient_0023
+Output:
+	At iteration: 1000
+	Bubble detected at iteration: 1550
+	Touches ROI wall: True
+	Proposed rollback value: 900 - distance: 4.894726753234863
+	Performing rollback to 650 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	At iteration: 4000
+	Converged at iteration: 4050!
+	Run took 54.2924s
+Note: Good, de
+A masodik (AL) izmot nem talalja meg az algoritmus. Ennek az az oka, hogy a CT rossz -> nincs ott bemelyedes/minimalis -> GAC nem fedi be. A masik izom eseten jol fut
+![p23_agac_res](gac_results_images/patient_0023_agac_res.png)
+![p23_gt](gac_results_images/patient_0023_gt.png)
+
+## patient_0024
+Output:
+
+	At iteration: 1000
+	At iteration: 2000
+	Converged at iteration: 2650!
+	Run took 79.5709s
+
+Note: Good
+
+## patient_0026
+Output:
+
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Bubble detected at iteration: 3050
+	Touches ROI wall: False
+	Proposed rollback value: 950 - distance: 4.572650909423828
+	Example voxel (z, y, x): (626, 230, 338)
+	Performing rollback to 700 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	At iteration: 4000
+	At iteration: 5000
+	Bubble detected at iteration: 5150
+	Touches ROI wall: False
+	Proposed rollback value: 1150 - distance: 4.827953338623047
+	Example voxel (z, y, x): (627, 229, 339)
+	Performing rollback to 700 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 2.25
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	At iteration: 4000
+	At iteration: 5000
+	Converged at iteration: 5150!
+	Run took 1351.6854s
+
+Note: Good, szokasos kisebb pukli. Ez kb. kovetkezik a maszk alakjabol
+
+## patient_0027
+Output:
+
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Bubble detected at iteration: 3000
+	Touches ROI wall: False
+	Proposed rollback value: 900 - distance: 4.918724060058594
+	Example voxel (z, y, x): (375, 208, 296)
+	Performing rollback to 650 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	At iteration: 4000
+	At iteration: 5000
+	At iteration: 6000
+	At iteration: 7000
+	Converged at iteration: 7600!
+	Run took 310.3336s
+
+Note: Good
+
+## patient_0028
+Output:
+
+	At iteration: 1000
+	Bubble detected at iteration: 1400
+	Touches ROI wall: True
+	Proposed rollback value: 350 - distance: 4.945931911468506
+	Performing rollback to 100 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Bubble detected at iteration: 3100
+	Touches ROI wall: False
+	Proposed rollback value: 500 - distance: 4.828218936920166
+	Example voxel (z, y, x): (86, 199, 347)
+	Performing rollback to 100 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 2.25
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Converged at iteration: 3850!
+	Run took 77.6429s
+
+Note: Rossz CT -> a maszk alakja megint elfedi az egyik izmot (orvos maszknal is) -> GAC 'rosszul' fut / masik izmot egyebkent jol tomi be (AL).
+
+## patient_0029
+Output:
+
+	At iteration: 1000
+	Bubble detected at iteration: 1400
+	Touches ROI wall: True
+	Proposed rollback value: 350 - distance: 4.945931911468506
+	Performing rollback to 100 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Bubble detected at iteration: 3100
+	Touches ROI wall: False
+	Proposed rollback value: 500 - distance: 4.828218936920166
+	Example voxel (z, y, x): (86, 199, 347)
+	Performing rollback to 100 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 2.25
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	Converged at iteration: 3850!
+	Run took 78.0643s
+
+Note: Ugyanaz a felvetel, mint 0028
+
+## patient_0030
+Output:
+
+	At iteration: 1000
+	Bubble detected at iteration: 1550
+	Touches ROI wall: False
+	Proposed rollback value: 300 - distance: 4.650102615356445
+	Example voxel (z, y, x): (292, 213, 365)
+	Performing rollback to 50 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 1.50
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	Bubble detected at iteration: 2700
+	Touches ROI wall: False
+	Proposed rollback value: 350 - distance: 4.932283401489258
+	Example voxel (z, y, x): (293, 205, 366)
+	Performing rollback to 50 of exp c1p0000_p0p2976_a1p0000
+	New params:
+		curvature_scaling: 2.25
+		advection_scaling: 1.00
+		propagation_scaling: 0.30
+		num_iterations: 1000.00
+		max_rms_error: 0.00
+	At iteration: 1000
+	At iteration: 2000
+	At iteration: 3000
+	At iteration: 4000
+	Converged at iteration: 4650!
+	Run took 511.0703s
+
+Note: Good, itt talan kicsit tul nagy a konvergencia ellenere a buborek?
+
+# kiertekeles
+(LV, muscle -> legyen ilyen modell mindkettore egyszerre betanitva)
+yuki vs nnunet
+yuki vs threshold
+szamok: dice, iou, Hausdorff distance
+derivaltas kuszobolos cikk kell
+
+residual vagy skip connection van-e az nnunet-ben (Gabornak uzenet)
