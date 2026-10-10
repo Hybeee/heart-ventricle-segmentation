@@ -277,7 +277,7 @@ def build_mask_param_sets(gac_dir, iterations):
     }
     mask_param_sets = []
 
-    it_dir = str(iterations[30])
+    it_dir = str(iterations[25])
 
     for mask_name in os.listdir(os.path.join(gac_dir, f"it{it_dir}")):
         mask_param_set = {}
@@ -304,7 +304,7 @@ def main():
     data_dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output")
     gac_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_full")
 
-    patient_id = "patient_0030"
+    patient_id = "patient_0053"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 

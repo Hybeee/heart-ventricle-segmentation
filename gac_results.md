@@ -901,3 +901,106 @@ szamok: dice, iou, Hausdorff distance
 derivaltas kuszobolos cikk kell
 
 residual vagy skip connection van-e az nnunet-ben (Gabornak uzenet)
+
+# MUSCLE SEGMENTATION
+## patient_0001
+LV:
+- jo, hasonlit az orvoshoz
+Izom:
+- AL: Jonak tunik. GT szerintem alulszegmental
+- PM: Jonak tunik, kiveve a kepen (itt bizonytalan). Nehol tulszegmental az GT, valahol pedig nem (itt nem biztos, hogy kell, kep->). Itt az GT is picit beleszegmental. HU ertekeket nezve ez hatareset, hogy melyik kell/jo.
+
+![p1_hms](gac_results_images/patient_0001_hms_1.png)
+
+## patient_0002
+LV:
+
+- jo, hasonlit az GT-hez
+- streaking utan a hid nagyon minimalis resze bennemarad. Szerintem ezt nem nagyon lehet kivedeni
+
+Izom:
+
+- AL: jo, az GT-vel kb. hasonlo. Egy ponton szerintem GT tulszegmental;
+- PM: jo, hasonlo kb. GT-ben nem connected component ez az izom -> rossz(?)
+
+![p2_hms](gac_results_images/patient_0002_hms_1.png)
+
+## patient_0003
+LV:
+- Talan kicsit tulszegmental, mint GT. A CT-t elnezve ez nem feltetlen rossz
+Izom:
+- AL: Logika alapjan jo, GT teljesen rossz (lokacio)
+- PM: Logika alapjan jo, GT teljesen rossz (lokacio)
+
+![p3_hms](gac_results_images/patient_0003_hms_1.png)
+
+## patient_0004
+LV:
+- Itt a streaking-et a postproc alg se tudta tokeletesen eltavolitani. Emiatt ott van elteres, egyebkent jo.
+
+Izom:
+- A streaking-es dolog miatt a konvex burok rossz -> lesz egy hatalmas komponens axialis szeleten a streaking-nel, ami emiatt 'izom' lesz. Egyebkent ez kiszurheto szerintem. A GT AL esetben alul, PM esetben tulszegmental szerintem.
+
+![p4_hms](gac_results_images/patient_0004_hms_1.png)
+
+## patient_0005
+LV:
+- jo, kb. ugyanazok
+- streaking egy ponton 'belevag' a maszkba. Ezt egyebkent a konvex burok befedi
+
+Izom:
+- AL: jo, GT alulszegmental
+- PM: jo, GT alulszegmental
+- Megjegyzes: Mostani ellenorzesben diff-et morph. close-oltam. Ugy az AL izom szetvalt ket kulon komponensre -> ezek lettek a legnagyobbak. A morph closing elhagyasaval megoldodott a problema, viszont igy lesznek reszek PM eseten, akik 'gyengen' kapcsolodnak a fo strukturahoz -> adott DT erteku hidak torlese -> legnagyobb komponensek megtartasa?
+
+![p5_hms](gac_results_images/patient_0005_hms_1.png)
+
+## patient_0006
+LV:
+- Erdekesebb CT, a postproc a kepen lathato okbol levag neha darabokat. Viszont jobb a szegmentacio, mint a GT (befalazza az izmokat)
+
+![p6_hms](gac_results_images/patient_0006_hms_1.png)
+
+Izmok:
+- AL: Lokaciora jo, GT alulszegmental, de jobban. Tul nagy az izom merete de ez jon az LV szegmentaciobol
+- PM: Lokaciora jo, meretre is. Hasonlit GT-re.
+
+## patient_0007
+LV:
+- jo, hasonlit GT-re
+
+Izmok:
+- AL: -
+- PM: -
+- Note: Az LV maszk jo, viszont nincs/alig van bemelyedese. Egyedul AL-nel lathato bemelyedes, viszont a GAC az inicializalt helyzeteben maradt. Kene early conv detection -> nagyobb prop value, ez lehet megoldja. Ugyanakkor csak AL-t, PM-nek nincs (GT-ben) sem bemelyedes.
+
+![p7_hms](gac_results_images/patient_0007_hms_1.png)
+
+## patient_0008
+LV:
+- jo, ugyanaz, mint GT
+
+Izom:
+- AL: jo, GT szerintem tulszegmental
+- PM: jo, GT szerintem tulszegmental
+
+![p8_hms](gac_results_images/patient_0008_hms_1.png)
+
+## patient_0009
+LV:
+- jo, GT-vel ugyanaz
+
+Izom:
+- AL: jo, viszont van egy kerdojeles resz (kep). Ezek 3D-ben connected-ek.
+- PM: jo lokaciora
+- Note: van egy problema. A ket betomott resz egy ponton osszeer. (kepen kijelolve). Emiatt azokat egy komponensek veszi - es egy masik kisebb komponens bejon. A maszk tulajdonsaga miatt szerintem a konvex burok tulsagosan kijon es ez biztositja par szeleten az atnyulast. Valahogy szet kene vagni. Otlet: Izmok lokaciojanak kijelolese: koronalis szeleten kozeppont felett/alatt, feluton BIZTOS elvagva. vagy valami ilyesmi
+
+![p9_hms](gac_results_images/patient_0009_hms_1.png)
+
+## patient_0010
+LV:
+- jo, GT viszont befalazza az izmokat
+
+Izom:
+- AL: jo, GT alulszegmental
+- PM: jo, GT alulszegmental
