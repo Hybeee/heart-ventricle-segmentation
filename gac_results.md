@@ -1416,6 +1416,7 @@ residual vagy skip connection van-e az nnunet-ben (Gabornak uzenet)
 ## patient_0001
 LV:
 - jo, hasonlit az orvoshoz
+
 Izom:
 - AL: Jonak tunik. GT szerintem alulszegmental
 - PM: Jonak tunik, kiveve a kepen (itt bizonytalan). Nehol tulszegmental az GT, valahol pedig nem (itt nem biztos, hogy kell, kep->). Itt az GT is picit beleszegmental. HU ertekeket nezve ez hatareset, hogy melyik kell/jo.
@@ -1441,6 +1442,7 @@ LV:
 Izom:
 - AL: Logika alapjan jo, GT teljesen rossz (lokacio)
 - PM: Logika alapjan jo, GT teljesen rossz (lokacio)
+- Note: Kesobbi megfigyeles alapjan - valszeg - a GT is jo, csak en rosszul irtam ki a maszkot.
 
 ![p3_hms](gac_results_images/patient_0003_hms_1.png)
 
@@ -1461,7 +1463,7 @@ LV:
 Izom:
 - AL: jo, GT alulszegmental
 - PM: jo, GT alulszegmental
-- Megjegyzes: Mostani ellenorzesben diff-et morph. close-oltam. Ugy az AL izom szetvalt ket kulon komponensre -> ezek lettek a legnagyobbak. A morph closing elhagyasaval megoldodott a problema, viszont igy lesznek reszek PM eseten, akik 'gyengen' kapcsolodnak a fo strukturahoz -> adott DT erteku hidak torlese -> legnagyobb komponensek megtartasa?
+- Megjegyzes: Mostani ellenorzesben diff-et morph. close-oltam. Ugy az AL izom szetvalt ket kulon komponensre -> ezek lettek a legnagyobbak. A morph closing elhagyasaval megoldodott a problema, viszont igy lesznek reszek PM eseten, akik 'gyengen' kapcsolodnak a fo strukturahoz -> adott DT erteku hidak torlese -> legnagyobb komponensek megtartasa? CT-t elnezve nem baj.
 
 ![p5_hms](gac_results_images/patient_0005_hms_1.png)
 
@@ -1503,7 +1505,7 @@ LV:
 Izom:
 - AL: jo, viszont van egy kerdojeles resz (kep). Ezek 3D-ben connected-ek.
 - PM: jo lokaciora
-- Note: van egy problema. A ket betomott resz egy ponton osszeer. (kepen kijelolve). Emiatt azokat egy komponensek veszi - es egy masik kisebb komponens bejon. A maszk tulajdonsaga miatt szerintem a konvex burok tulsagosan kijon es ez biztositja par szeleten az atnyulast. Valahogy szet kene vagni. Otlet: Izmok lokaciojanak kijelolese: koronalis szeleten kozeppont felett/alatt, feluton BIZTOS elvagva. vagy valami ilyesmi
+- Note: van egy problema. A ket betomott resz egy ponton osszeer. (kepen kijelolve). Emiatt azokat egy komponensek veszi - es egy masik kisebb komponens bejon. A maszk tulajdonsaga miatt szerintem a konvex burok tulsagosan kijon es ez biztositja par szeleten az atnyulast. Valahogy szet kene vagni. Otlet: Izmok lokaciojanak kijelolese: koronalis szeleten kozeppont felett/alatt, feluton BIZTOS elvagva. vagy valami ilyesmi. Itt egyeblent elobb megallitott GAC-nal is connected-ek. Max akkor nem, amikor a konvex burok 'rossz'.
 
 ![p9_hms](gac_results_images/patient_0009_hms_1.png)
 
@@ -1522,7 +1524,7 @@ LV:
 Izom:
 - AL: jo, a GT rosszabbnak tunik
 - PM: okes, lehet rossz? GT nem nagyon ertelmezheto. Logikailag jo
-- Note: itt se volt jo a diff morph close-olasa -> anelkul futtatva a kepek lent. PM-tol jobbra is diff resze, de nem connected -> nem kerul be.
+- Note: itt se volt jo a diff morph close-olasa -> anelkul futtatva a kepek lent. PM-tol jobbra is diff resze (a kepen), de nem connected -> nem kerul be.
 
 ![p11_hms](gac_results_images/patient_0011_hms_1.png)
 ![p11_hms](gac_results_images/patient_0011_hms_2.png)
@@ -1557,7 +1559,7 @@ LV:
 
 Izom:
 - AL: GT-hez kepest alulszegmental, de ez kovetkezik az LV szegmentaicobol
-- PM: egy 3. komponens (rossz lokacio) lett az 1./2. legnagyobb -> emiatt rossz. De a helyes maszk benne van diff-ben.
+- PM: egy 3. komponens(kep, rossz lokacio) lett az 1./2. legnagyobb -> emiatt rossz. De a helyes maszk benne van diff-ben.
 
 ![p15_hms](gac_results_images/patient_0015_hms_1.png)
 

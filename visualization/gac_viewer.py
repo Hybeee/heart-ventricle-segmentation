@@ -304,7 +304,7 @@ def main():
     data_dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output")
     gac_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_full")
 
-    patient_id = "patient_0053"
+    patient_id = "patient_0015"
     patient_data_dir = os.path.join(data_dir, patient_id)
     patient_gac_dir = os.path.join(gac_dir, patient_id)
 
