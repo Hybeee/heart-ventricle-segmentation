@@ -1810,7 +1810,7 @@ LV:
 Izmok:
 - AL: pozicio jo
 - PM: pozicio jo
-- Note: Egyreszt ez csak morph closing nelkul. Masreszt AL eseten a maszk vegigfolyik az oldalan az LV maszknak -> ossze vannak kotve, emiatt is kene valami plusz itt meg
+- Note: Egyreszt ez csak morph closing nelkul. Masreszt AL eseten a maszk vegigfolyik az oldalan az LV maszknak -> ossze vannak kotve, emiatt is kene valami plusz itt meg O ERDEKES
 
 ## patient_0043
 - Note: rossz CT, mint patient_0013
@@ -1898,3 +1898,7 @@ Izmok:
 - Note: PM oldalan ket nagy komponens is van. Sajnos ezeket valogatja be az algoritmus. AL izom is diff resze, jo az alakja, viszont nem eleg nagy. Morph closing elhagyasa megoldja.
 
 ![p53_hms](gac_results_images/patient_0053_hms_1.png)
+
+- ket oldalt van
+- voxelek amikre igaz, hogy vagy LV vagy szivizom a szomszedjuk -> ezt thresholdni (mennyi%)
+- mennyire nyulik be (legkintebbi es legbentebbi pontok tavolsaga) -> ezt is thresholdni (convex hull + boundary & mask paronkenti tavvolsagok)
