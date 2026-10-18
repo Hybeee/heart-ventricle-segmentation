@@ -505,10 +505,138 @@ def _process_patient(data_dir, out_dir):
         output_dir=results_output_dir
     )
 
+# Prototype only will need to properly overwrite for final code
+import re
+import shutil
+
+def _fill_internal_holes(mask):
+    se_26_connectivity = np.ones((3, 3, 3))
+    connected_components, _ = ndimage.label(~mask, se_26_connectivity)
+
+    components, component_counts = np.unique(connected_components, return_counts=True)
+
+    max_component = components[np.argmax(component_counts)]
+
+    filled_mask = mask | (connected_components != max_component)
+
+    return filled_mask
+
+def _read_results(logs_path):
+    with open(logs_path) as f:
+        text = f.read()
+
+    chunks = re.split(r"^Processing (patient_\d+)\.\.\.\s*$", text, flags=re.M)
+    param_re = re.compile(r"((?:curvature|advection|propagation)_scaling):\s*([\d.]+)")
+
+    results = {}
+    for pid, body in zip(chunks[1::2], chunks[2::2]):
+        params = {k: float(v) for k, v in param_re.findall(body.split("Bubble detected")[0])}
+
+        blocks = body.split("New params:")[1:]
+        if blocks:
+            last = {k: float(v) for k, v in param_re.findall(blocks[-1])}
+            params["curvature_scaling"] = last["curvature_scaling"]
+
+        conv = re.search(r"Converged at iteration:\s*(\d+)", body)
+
+        results[pid] = {
+            "iteration": int(conv.group(1)) if conv else None,
+            "curvature_scaling": params["curvature_scaling"],
+            "advection_scaling": params["advection_scaling"],
+            "propagation_scaling": params["propagation_scaling"]
+        }
+
+    return results
+
+def segment_muscles(data_dir, gac_out_dir, logs_path, out_dir):
+    results = _read_results(logs_path)
+
+    for patient_id in results.keys():
+        print(f"Processing {patient_id}...")
+
+        patient_data_dir = os.path.join(data_dir, patient_id)
+        curr_out_dir = os.path.join(out_dir, patient_id)
+        os.makedirs(curr_out_dir, exist_ok=True)
+
+        datas = [
+            "ct.nii.gz",
+            "mask.seg.nrrd",
+            "final_mask_nip.seg.nrrd",
+            "doc_mask.seg.nrrd"
+        ]
+
+        for data_name in datas:
+            shutil.copy(
+                src=os.path.join(patient_data_dir, data_name),
+                dst = os.path.join(curr_out_dir, data_name)
+            )
+
+        iteration = results[patient_id]["iteration"]
+        curv = results[patient_id]["curvature_scaling"]
+        prop = results[patient_id]["propagation_scaling"]
+        adv = results[patient_id]["advection_scaling"]
+        mask_name = _make_mask_name(
+            curv=curv,
+            prop=prop,
+            adv=adv
+        )
+
+        shutil.copy(
+            src=os.path.join(gac_out_dir, patient_id, f"it{iteration}", f"{mask_name}.seg.nrrd"),
+            dst=os.path.join(curr_out_dir, "convex_hull.seg.nrrd")
+        )
+
+        mask_sitk, mask = utils.scan_to_np_array(scan_path=os.path.join(patient_data_dir, "final_mask_nip.seg.nrrd"), return_sitk=True)
+        mask = mask.astype(bool)
+        mask = _fill_internal_holes(mask=mask)
+        hull = utils.scan_to_np_array(scan_path=os.path.join(gac_out_dir, patient_id, f"it{iteration}", f"{mask_name}.seg.nrrd"))
+        hull = hull.astype(bool)
+
+        diff = hull & ~mask
+        diff = ndimage.binary_opening(diff, structure=np.ones((3, 3, 3)))
+
+        diff_labeled, _ = ndimage.label(diff)
+        components, counts = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
+        top2 = components[np.argsort(counts)[-2:]]
+        muscle_mask = np.isin(diff_labeled, top2)
+        # muscle_mask = ndimage.binary_opening(muscle_mask, structure=np.ones((3, 3, 3)))
+
+        print(f"\tFound {len(components)} components")
+
+        utils.save_data(
+            data=diff,
+            ref_sitk=mask_sitk,
+            output_dir=curr_out_dir,
+            name="diff",
+            is_mask=True,
+            color="1.0 0.55 0.1",
+            segment_name="diff"
+        )
+
+        utils.save_data(
+            data=muscle_mask,
+            ref_sitk=mask_sitk,
+            output_dir=curr_out_dir,
+            name="muscle_mask",
+            is_mask=True,
+            color="0.65 0.3 0.9",
+            segment_name="muscle_mask"
+        )
+
 def main():
-    data_dir = os.path.join(ROOT_DIR, "pipeline_output")
-    out_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_test")
+    data_dir = os.path.join(ROOT_DIR, "postproc_alg_vars_output")
+    out_dir = os.path.join(ROOT_DIR, "adaptive_gac_output_full")
     os.makedirs(out_dir, exist_ok=True)
+
+    hms_out_dir = os.path.join(ROOT_DIR, "adaptive_gac_hms_output")
+    os.makedirs(hms_out_dir, exist_ok=True)
+    segment_muscles(
+        data_dir=data_dir,
+        gac_out_dir=out_dir,
+        logs_path=os.path.join(out_dir, "log.txt"),
+        out_dir=hms_out_dir
+    )
+    return
 
     for patient_id in sorted(os.listdir(data_dir)):        
         print(f"Processing {patient_id}...")

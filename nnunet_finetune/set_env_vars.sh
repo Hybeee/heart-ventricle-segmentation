@@ -2,3 +2,4 @@ export nnUNet_raw="/home/szaniszlo/szaniszlo/code/solution/heart-ventricle-segme
 export nnUNet_preprocessed="/home/szaniszlo/szaniszlo/code/solution/heart-ventricle-segmentation/nnunet_finetune/nnUNet_preprocessed"
 export nnUNet_results="/home/szaniszlo/szaniszlo/code/solution/heart-ventricle-segmentation/nnunet_finetune/nnUNet_results"
 export nnUNet_compile=false
+export nnUNet_extTrainer="/home/szaniszlo/szaniszlo/code/solution/heart-ventricle-segmentation/nnunet_finetune/extensions"
