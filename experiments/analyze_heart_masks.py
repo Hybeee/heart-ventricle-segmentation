@@ -1,7 +1,17 @@
 import numpy as np
 import scipy.ndimage as ndimage
+from scipy.spatial.distance import pdist
+from skimage.morphology import convex_hull_image
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
+import pandas as pd
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.compose import ColumnTransformer
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_predict, LeaveOneGroupOut
 
 import json
 import os, sys
@@ -11,12 +21,89 @@ if ROOT_DIR not in sys.path:
 
 import utils
 
+def voxel_coords(mask, spacing):
+    return np.argwhere(mask) * np.asarray(spacing, dtype=float)
+
+def pca_axes(mask, spacing):
+    pts = voxel_coords(mask=mask, spacing=spacing)
+    c = pts.mean(axis=0)
+    cov = np.cov((pts - c).T)
+    evals, evecs = np.linalg.eigh(cov)
+    order = np.argsort(evals)[::-1]
+
+    return c, evals[order], evecs[:, order]
+
+def orient_pc1(lv, spacing, pc1):
+    pts = voxel_coords(lv, spacing)
+    ct_c = (np.array(lv.shape) - 1) / 2.0 * spacing
+    d = np.linalg.norm(pts - ct_c, axis=1)
+
+    k = max(1, int(0.05 * len(pts)))
+    order = np.argsort(d)
+    p_near = pts[order[:k]].mean(0)
+    p_far = pts[order[-k:]].mean(0)
+
+    margin = (p_far - p_near) @ pc1
+
+    if margin < 0:
+        pc1 = -pc1
+    
+    return pc1
+
+def _export_vector_to_slicer(
+        mask_center, lv_c, ref_sitk, name,
+        path="vector.mrk.json", coord_system="LPS",
+):
+    D = np.array(ref_sitk.GetDirection()).reshape(3, 3)
+    O = np.array(ref_sitk.GetOrigin())
+
+    def to_phys(p_zyx):
+        # voxel_coords() returns (z, y, x) * (sz, sy, sx)
+        # Reorder to physical-axis order (x, y, z)
+        p_xyz = np.asarray(p_zyx)[::-1]
+
+        # Convert to physical coordinates (LPS)
+        return O + D @ p_xyz
+
+    p1 = to_phys(lv_c)
+    p2 = to_phys(mask_center)
+
+    def cp(i, pos, label):
+        return {
+            "id": str(i),
+            "label": label,
+            "position": [float(x) for x in pos],
+            "selected": True,
+            "locked": False,
+            "visibility": True,
+            "positionStatus": "defined",
+        }
+
+    data = {
+        "@schema": "https://raw.githubusercontent.com/slicer/slicer/master/Modules/Loadable/Markups/Resources/Schema/markups-schema-v1.0.3.json#",
+        "markups": [{
+            "type": "Line",
+            "name": name,
+            "coordinateSystem": coord_system,
+            "controlPoints": [
+                cp(1, p1, "lv_c"),
+                cp(2, p2, "mask_center"),
+            ],
+        }],
+    }
+
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
 class MaskDataAnalyzer:
     def __init__(self, data_dir, patient_ids):
         self.data_dir = data_dir
         self.patient_ids = patient_ids
         self.output_dir = os.path.join(ROOT_DIR, "hms_muscle_analysis_output")
         os.makedirs(self.output_dir, exist_ok=True)
+
+        self.comp_dir = os.path.join(self.output_dir, "comps")
+        os.makedirs(self.comp_dir, exist_ok=True)
 
     def _get_mask_boundary(self, mask):
         mask_e = ndimage.binary_erosion(mask, structure=np.ones((3, 3, 3)))
@@ -25,36 +112,24 @@ class MaskDataAnalyzer:
 
         return points
 
+    def _plot_data(self, output_dir, patient_id, al_val, pm_val, data, xlabel, save_name):
+        data = np.asarray(data)
+        upper = max(data.max(), al_val, pm_val) * 1.05
+
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.hist(data, bins=np.linspace(0, upper, 30), color="lightblue", edgecolor="black")
+        ax.axvline(al_val, color="tab:blue", lw=2, label=f"AL ({al_val:.2f})")
+        ax.axvline(pm_val, color="tab:red", lw=2, label=f"PM ({pm_val:.2f})")
+        ax.set_xlim(0, upper)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("# of components")
+        ax.set_title(f"{patient_id} (diff components={len(data)})")
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_dir, f"{patient_id}_{save_name}.png"))
+        plt.close(fig)
+
     # center of mass side analysis - only needs 'GT' masks, produces global result
-    def voxel_coords(self, mask, spacing):
-        return np.argwhere(mask) * np.asarray(spacing, dtype=float)
-
-    def pca_axes(self, mask, spacing):
-        pts = self.voxel_coords(mask=mask, spacing=spacing)
-        c = pts.mean(axis=0)
-        cov = np.cov((pts - c).T)
-        evals, evecs = np.linalg.eigh(cov)
-        order = np.argsort(evals)[::-1]
-
-        return c, evals[order], evecs[:, order]
-
-    def orient_pc1(self, lv, spacing, pc1):
-        pts = self.voxel_coords(lv, spacing)
-        ct_c = (np.array(lv.shape) - 1) / 2.0 * spacing
-        d = np.linalg.norm(pts - ct_c, axis=1)
-
-        k = max(1, int(0.05 * len(pts)))
-        order = np.argsort(d)
-        p_near = pts[order[:k]].mean(0)
-        p_far = pts[order[-k:]].mean(0)
-
-        margin = (p_far - p_near) @ pc1
-
-        if margin < 0:
-            pc1 = -pc1
-        
-        return pc1
-
     def _are_on_same_slides(self, pc1, c, al_c, pm_c, t_lo, t_hi):
         e_y = np.array([0.0, 1.0, 0.0]) # coronal normal vec
         v = e_y - (e_y @ pc1) * pc1
@@ -94,14 +169,14 @@ class MaskDataAnalyzer:
             al = utils.scan_to_np_array(scan_path=al_path)
             pm = utils.scan_to_np_array(scan_path=pm_path)
 
-            c, _, evecs = self.pca_axes(lv, spacing)
+            c, _, evecs = pca_axes(lv, spacing)
             pc1 = evecs[:, 0]
-            pc1 = self.orient_pc1(lv, spacing, pc1) # base -> tip direction
+            pc1 = orient_pc1(lv, spacing, pc1) # base -> tip direction
 
-            al_c = self.voxel_coords(al, spacing).mean(axis=0)
-            pm_c = self.voxel_coords(pm, spacing).mean(axis=0)
+            al_c = voxel_coords(al, spacing).mean(axis=0)
+            pm_c = voxel_coords(pm, spacing).mean(axis=0)
 
-            pts = self.voxel_coords(lv, spacing)
+            pts = voxel_coords(lv, spacing)
             t = (pts - c) @ pc1
             t_lo, t_hi = np.percentile(t, [1, 99])
 
@@ -150,22 +225,6 @@ class MaskDataAnalyzer:
             z_max, y_max, x_max = maxs
 
             return mask[z_min:z_max, y_min:y_max, x_min:x_max]
-            
-    def _plot_frac_dist(self, output_dir, patient_id, al_frac, pm_frac, fracs):
-        fracs = np.asarray(fracs)
-
-        fig, ax = plt.subplots(figsize=(7, 4))
-        ax.hist(fracs, bins=np.linspace(0, 1, 30), color="lightblue", edgecolor="black")
-        ax.axvline(al_frac, color="tab:blue", lw=2, label=f"AL ({al_frac:.2f})")
-        ax.axvline(pm_frac, color="tab:red", lw=2, label=f"PM ({pm_frac:.2f})")
-        ax.set_xlim(0, 1)
-        ax.set_xlabel(f"Fraction of voxels with all of their neighbours being LV or muscle")
-        ax.set_ylabel(f"# of components")
-        ax.set_title(f"{patient_id} (diff components={len(fracs)})")
-        ax.legend()
-        fig.tight_layout()
-        fig.savefig(os.path.join(output_dir, f"{patient_id}_frac_dist.png"))
-        plt.close(fig)
     
     def analyze_neighbours(self):
         print(f"Analyzing component (diff) neighbours...")
@@ -191,7 +250,7 @@ class MaskDataAnalyzer:
             diff_labeled, _ = ndimage.label(diff)
             out = sitk.GetImageFromArray(diff_labeled.astype(np.uint16))
             out.CopyInformation(lv_sitk)
-            sitk.WriteImage(out, os.path.join(output_dir, f"{patient_id}_diff_labeled.nrrd"))
+            sitk.WriteImage(out, os.path.join(self.comp_dir, f"{patient_id}_diff_labeled.nrrd"))
 
             components, _ = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
 
@@ -210,10 +269,11 @@ class MaskDataAnalyzer:
                 if sl is None:
                     continue
 
-                sl = tuple(slice(max(s.start - 2, 0), min(s.stop + 1, n))
+                sl = tuple(slice(max(s.start - 2, 0), min(s.stop + 2, n))
                             for s, n in zip(sl, diff_labeled.shape))
                 
                 comp = diff_labeled[sl] == component
+                comp = ndimage.binary_dilation(comp, structure=struct)
                 allowed = comp | lv[sl]
                 eroded = ndimage.binary_erosion(allowed, structure=struct)
                 count = np.count_nonzero(comp & eroded)
@@ -227,12 +287,14 @@ class MaskDataAnalyzer:
                 elif component == pm_component:
                     pm_frac = frac
 
-            self._plot_frac_dist(
+            self._plot_data(
                 output_dir=output_dir,
                 patient_id=patient_id,
-                al_frac=al_frac,
-                pm_frac=pm_frac,
-                fracs=fracs
+                al_val=al_frac,
+                pm_val=pm_frac,
+                data=fracs,
+                xlabel="Fraction of voxels with all of their neighbours being LV or muscle",
+                save_name="frac_dist"
             )
 
             all_component_data[patient_id] = {
@@ -246,8 +308,250 @@ class MaskDataAnalyzer:
 
 
     # intrusion analyzer - how 'much' the muscle enters the LV
+    def _get_convex_hull_mask_dist(self, mask, convex_hull, spacing, c_crop, comp_c, lv_c, ref_sitk, offset, comp_id=None):
+        ch_boundary_p = self._get_mask_boundary(convex_hull)
+        
+        ch_boundary_mask = np.zeros_like(convex_hull)
+        ch_boundary_mask[tuple(ch_boundary_p.T)] = 1
+
+        candidate_points = np.argwhere(mask & ch_boundary_mask) * spacing # world coordinates for distances
+
+        if len(candidate_points) < 2:
+            return 0.0
+        
+        # max dist between any points. might result in a biased distance
+        # maybe the max distance is needed between closest point to center
+        # and any other point?
+        # max_dist = np.max(pdist(candidate_points))
+
+        # idea above - probably not the best?
+        d_to_center = np.linalg.norm((candidate_points - c_crop), axis=1)
+        min_dist_point = candidate_points[np.argmin(d_to_center)]
+
+        max_dist = np.linalg.norm(candidate_points - min_dist_point, axis=1).max()
+
+        if comp_id is not None:
+            max_dist_i = np.argmax(np.linalg.norm(candidate_points - min_dist_point, axis=1))
+            rel_p = candidate_points[max_dist_i]
+
+            _export_vector_to_slicer(
+                mask_center=comp_c,
+                lv_c=lv_c,
+                ref_sitk=ref_sitk,
+                name=f"{comp_id}_cvec",
+                path=f"{comp_id}_cvec.mrk.json"
+            )
+
+            _export_vector_to_slicer(
+                mask_center=rel_p + offset*spacing,
+                lv_c=min_dist_point + offset*spacing,
+                ref_sitk=ref_sitk,
+                name=f"{comp_id}_mvec",
+                path=f"{comp_id}_mvec.mrk.json"
+            )
+
+            v1 = (rel_p + offset*spacing) - (min_dist_point + offset*spacing)
+            v2 = lv_c - comp_c
+
+            d = np.dot(v1, v2)
+            cos = d / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
+            print(f"{comp_id} - {cos}")
+
+        return max_dist
 
 
+    def measure_muscle_intrusion(self):
+        print(f"Analyzing muscle intrusion data...")
+        output_dir = os.path.join(self.output_dir, "intrusion_analysis_lvc")
+        os.makedirs(output_dir, exist_ok=True)
+
+        all_data = {}
+
+        for patient_id in self.patient_ids:
+            patient_id = "patient_0004"
+            print(f"\tProcessing {patient_id}...")
+
+            lv_path = os.path.join(self.data_dir, patient_id, "final_mask_nip.seg.nrrd")
+            al_path = os.path.join(self.data_dir, patient_id, "al_intersection.seg.nrrd")
+            pm_path = os.path.join(self.data_dir, patient_id, "pm_intersection.seg.nrrd")
+            diff_path = os.path.join(self.data_dir, patient_id, "diff.seg.nrrd")
+
+            lv_sitk, lv = utils.scan_to_np_array(scan_path=lv_path, return_sitk=True)
+            lv = lv > 0
+            spacing = np.array(lv_sitk.GetSpacing())[::-1]
+            lv_c = voxel_coords(lv, spacing).mean(axis=0)
+            
+            al = utils.scan_to_np_array(scan_path=al_path)
+            pm = utils.scan_to_np_array(scan_path=pm_path)
+            diff = utils.scan_to_np_array(scan_path=diff_path)
+
+            diff_labeled, _ = ndimage.label(diff)
+            out = sitk.GetImageFromArray(diff_labeled.astype(np.uint16))
+            out.CopyInformation(lv_sitk)
+            sitk.WriteImage(out, os.path.join(self.comp_dir, f"{patient_id}_diff_labeled.nrrd"))
+
+            components, _ = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
+
+            slices = ndimage.find_objects(diff_labeled)
+
+            al_component = np.unique(diff_labeled[al > 0])[-1]
+            pm_component = np.unique(diff_labeled[pm > 0])[-1]
+
+            al_dist, pm_dist = 0, 0
+            dists = []
+            curr_data = {}
+
+            for component in components:
+                sl = slices[component - 1]
+                if sl is None:
+                    continue
+
+                sl = tuple(slice(max(s.start - 2, 0), min(s.stop + 2, n))
+                            for s, n in zip(sl, diff_labeled.shape))
+                offset = np.array([s.start for s in sl])
+                
+                comp = diff_labeled[sl] == component
+                convex_hull = convex_hull_image(comp)
+
+                if component == 7 or component == 80:
+                    comp_c = voxel_coords(
+                        mask=diff_labeled == component,
+                        spacing=spacing
+                    ).mean(axis=0)
+                    comp_id = component
+                else:
+                    comp_id = None
+                    comp_c = None
+
+                max_dist = self._get_convex_hull_mask_dist(
+                    mask=comp,
+                    convex_hull=convex_hull,
+                    spacing=spacing,
+                    c_crop = lv_c - offset * spacing,
+                    comp_c=comp_c,
+                    lv_c=lv_c,
+                    ref_sitk=lv_sitk,
+                    offset=offset,
+                    comp_id = comp_id
+                )
+                dists.append(max_dist)
+                curr_data[int(component)] = float(max_dist)
+
+                if component == al_component:
+                    al_dist = max_dist
+                elif component == pm_component:
+                    pm_dist = max_dist
+
+            self._plot_data(
+                output_dir=output_dir,
+                patient_id=patient_id,
+                al_val=al_dist,
+                pm_val=pm_dist,
+                data=dists,
+                xlabel="Max distance between any two points of component",
+                save_name="max_dist"
+            )
+
+            all_data[patient_id] = {
+                "al_component": int(al_component),
+                "pm_component": int(pm_component),
+                "component_data": curr_data
+            }
+            return
+
+        with open(os.path.join(self.output_dir, "intrusion_data.json"), 'w') as f:
+            json.dump(all_data, f, indent=3)
+
+    def _get_json_data(self, path):
+        with open(path) as f:
+            return json.load(f)
+
+    def _get_norm_pc1_pos(self, c, pc1, t_lo, t_hi, spacing, comp):
+        points = voxel_coords(comp, spacing)
+        t = ((points - c) @ pc1 - t_lo) / (t_hi - t_lo)
+        lo, hi = np.percentile(t, [1, 99])
+
+        # def _norm_z(p_mm):
+        #     q = np.atleast_2d(p_mm) - c
+        #     return ((q @ pc1) - t_lo) / (t_hi - t_lo)
+
+        return t.mean(), lo, hi
+
+    def create_dataset(self):
+        print("Creating dataset...")
+        dataset = {}
+
+        frac_data = self._get_json_data(os.path.join(self.output_dir, "component_frac_data.json"))
+        intrusion_data = self._get_json_data(os.path.join(self.output_dir, "intrusion_data.json"))
+
+        for patient_id in self.patient_ids:
+            print(f"\tProcessing {patient_id}...")
+
+            curr_frac_data = frac_data[patient_id]
+            curr_intrusion_data = intrusion_data[patient_id]
+            al_c = curr_frac_data["al_component"]
+            pm_c = curr_frac_data["pm_component"]
+
+            patient_data = {}
+
+            lv_path = os.path.join(self.data_dir, patient_id, "final_mask_nip.seg.nrrd")
+            al_path = os.path.join(self.data_dir, patient_id, "al_intersection.seg.nrrd")
+            pm_path = os.path.join(self.data_dir, patient_id, "pm_intersection.seg.nrrd")
+            diff_path = os.path.join(self.data_dir, patient_id, "diff.seg.nrrd")
+
+            lv_sitk, lv = utils.scan_to_np_array(scan_path=lv_path, return_sitk=True)
+            lv = lv > 0
+            spacing = np.asarray(lv_sitk.GetSpacing()[::-1], float)
+            c, _, evecs = pca_axes(lv, spacing)
+            pc1 = evecs[:, 0]
+            pc1 = orient_pc1(lv, spacing, pc1) # base -> tip direction
+            pts = voxel_coords(lv, spacing)
+            t = (pts - c) @ pc1
+            t_lo, t_hi = np.percentile(t, [1, 99])
+
+            diff = utils.scan_to_np_array(scan_path=diff_path)
+
+            diff_labeled, _ = ndimage.label(diff)
+            components, _ = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
+            slices = ndimage.find_objects(diff_labeled)
+
+            for component in components:
+                sl = slices[component - 1]
+                if sl is None:
+                    continue
+
+                sl = tuple(slice(max(s.start - 2, 0), min(s.stop + 2, n))
+                            for s, n in zip(sl, diff_labeled.shape))
+
+                comp = diff_labeled == component
+                cropped_comp = diff_labeled[sl] == component
+
+                thickness = ndimage.distance_transform_edt(cropped_comp, sampling=spacing).max()
+                rel_vol = np.count_nonzero(comp) / np.count_nonzero(lv)
+                norm_mean, norm_lo, norm_hi = self._get_norm_pc1_pos(
+                    c=c,
+                    pc1=pc1,
+                    t_lo=t_lo,
+                    t_hi=t_hi,
+                    spacing=spacing,
+                    comp=comp
+                )
+
+                patient_data[int(component)] = {
+                    "neighbor_fraction": curr_frac_data["component_data"][str(component)],
+                    "intrusion_depth": curr_intrusion_data["component_data"][str(component)],
+                    "thickness": float(thickness),
+                    "rel_vol": float(rel_vol),
+                    "norm_mean": float(norm_mean),
+                    ""
+                    "is_muscle": bool(component in (al_c, pm_c))
+                }
+
+            dataset[patient_id] = patient_data
+
+        with open(os.path.join(self.output_dir, "dataset.json"), 'w') as f:
+            json.dump(dataset, f, indent=3)
 
 def _component_touching(diff, struct):
     empty = np.zeros(diff.shape, dtype=bool)
@@ -282,6 +586,12 @@ def _create_gt_hm_intersection(data_dir, patient_ids):
 
         al_intersection = _component_touching(diff, al)
         pm_intersection = _component_touching(diff, pm)
+        if patient_id == "patient_0024":
+            labeled, n = ndimage.label(diff)
+            pm_intersection = labeled == 1
+        elif patient_id == "patient_0053":
+            labeled, n = ndimage.label(diff)
+            pm_intersection = labeled == 1
 
         if not al.any():
             print(f"Skipping {patient_id}! AL mask is empty.")
@@ -332,6 +642,159 @@ def _create_gt_hm_intersection(data_dir, patient_ids):
         _save_slice_with_largest_struct(al_intersection, "AL")
         _save_slice_with_largest_struct(pm_intersection, "PM")
 
+FEATURES = ["neighbor_fraction","intrusion_depth","thickness","rel_vol","norm_pos"]
+MODEL_TYPE = "SVM"
+
+class MuscleSegmentationModel:
+    def __init__(self, dataset_path: str, data_dir: str):
+        self.model = self._init_model()
+        self.data_dir = data_dir
+        self.dataset_path = dataset_path
+
+        if self.dataset_path.endswith(".json"):
+            self.dataset = self._load_json_dataset(self.dataset_path)
+        elif self.dataset_path.endswith(".csv"):
+            self.dataset = pd.read_csv(self.dataset_path)
+        else:
+            raise RuntimeError(f"Dataset can only be a .csv or .json file. Got: {dataset_path.split('.')[-1]}")
+
+    def _load_json_dataset(self, dataset_path):
+        with open(dataset_path) as f:
+            dataset = json.load(f)
+
+        rows = [
+            {"patient_id": pid, "component": int(comp), **features}
+            for pid, comps in dataset.items()
+            for comp, features in comps.items()
+        ]
+
+        df = pd.DataFrame(rows)
+        df["is_muscle"] = df["is_muscle"].astype(int)
+
+        df.to_csv(os.path.join(os.path.dirname(dataset_path), "dataset.csv"), index=False)
+
+        return df
+
+    def _init_model(self):
+        print(f"Using model {MODEL_TYPE} for evaluation!")
+
+        if MODEL_TYPE == "logreg":
+            return make_pipeline(
+                StandardScaler(),
+                LogisticRegression(C=0.1, class_weight="balanced", max_iter=1000)
+            )
+        elif MODEL_TYPE == "SVM":
+            pre = ColumnTransformer(
+                [("log1p", FunctionTransformer(np.log1p), ["intrusion_depth", "thickness"]),
+                 ("log", FunctionTransformer(np.log), ["rel_vol"])]
+            )
+
+            return make_pipeline(
+                pre,
+                StandardScaler(),
+                SVC(kernel='rbf', C=1.0, class_weight='balanced')
+            )
+        else:
+            raise ValueError(f"Unknow model type: {MODEL_TYPE}")
+
+    def cross_val(self):
+        df = self.dataset
+
+        if MODEL_TYPE == "logreg":
+            probs = cross_val_predict(
+                self.model, df[FEATURES], df["is_muscle"],
+                groups=df["patient_id"], cv=LeaveOneGroupOut(),
+                method="predict_proba"
+            )[:, 1]
+
+            return df.assign(prob=probs)
+        elif MODEL_TYPE == "SVM":
+            scores = cross_val_predict(
+                self.model, df[FEATURES], df["is_muscle"],
+                groups=df["patient_id"], cv=LeaveOneGroupOut(),
+                method="decision_function"
+            )
+
+            return df.assign(score=scores)
+
+    def eval_dataset(self):
+        print("Running Leave-One-Out cross validation...")
+        result_df = self.cross_val()
+
+        print("Evaluating results...")
+
+        results = {}
+
+        result_col_name = None
+        if MODEL_TYPE == "logreg":
+            result_col_name = "prob"
+        elif MODEL_TYPE == "SVM":
+            result_col_name = "score"
+
+        for patient_id in result_df["patient_id"].unique():
+            print(f"Evaluating {patient_id} results...")
+
+            lv_path = os.path.join(self.data_dir, patient_id, "final_mask_nip.seg.nrrd")
+            lv_sitk, lv = utils.scan_to_np_array(scan_path=lv_path, return_sitk=True)
+            lv = lv > 0
+            spacing = np.asarray(lv_sitk.GetSpacing()[::-1], float)
+
+            diff_path = os.path.join(self.data_dir, patient_id, "diff.seg.nrrd")
+            diff = utils.scan_to_np_array(scan_path=diff_path)
+            diff_labeled, _ = ndimage.label(diff)
+            components, _ = np.unique(diff_labeled[diff_labeled > 0], return_counts=True)
+
+            c, _, evecs = pca_axes(lv, spacing)
+            pc1 = evecs[:, 0]
+            pc1 = orient_pc1(lv, spacing, pc1)
+            e_y = np.array([0.0, 1.0, 0.0])
+            v = e_y - (e_y @ pc1) * pc1
+            v /= np.linalg.norm(v)
+
+            w = np.cross(pc1, v)
+            w /= np.linalg.norm(w)
+
+            neg_side, pos_side = [], []
+            for component in components:
+                comp = diff_labeled == component
+                comp_c = voxel_coords(comp, spacing).mean(axis=0)
+
+                val = (comp_c - c) @ w
+                if val < 0:
+                    neg_side.append(component)
+                else:
+                    pos_side.append(component)
+
+            values = result_df[result_df["patient_id"] == patient_id].set_index("component")[result_col_name]
+            picked = [int(values.loc[side].idxmax()) for side in (neg_side, pos_side) if side]
+
+            gt = {int(c) for c in result_df.loc[
+                (result_df["patient_id"] == patient_id) & (result_df["is_muscle"] == 1),
+                "component"
+            ]}
+            results[patient_id] = sorted(gt) == sorted(picked)
+            print(f"\tpicked: {sorted(picked)} | GT: {sorted(gt)} -> {results[patient_id]}")
+
+        n_correct = sum(results.values())
+        print(f"Correct: {n_correct} / {len(results)}")
+        print(f"To inspect: {[p for p, ok in results.items() if not ok]}")
+
+        final_res = {}
+        final_res["eval_results"] = {
+            "correct": n_correct,
+            "all": len(results),
+            "accuracy": float(n_correct / len(results)),
+            "to_inspect": [p for p, ok in results.items() if not ok]
+        }
+        final_res["detailed_results"] = {
+            pid: {int(comp): float(s) for comp, s in zip(g["component"], g[result_col_name])}
+            for pid, g in result_df.groupby("patient_id")
+        }
+
+        with open(os.path.join(os.path.dirname(self.dataset_path), f"{MODEL_TYPE}_results.json"), 'w') as f:
+            json.dump(final_res, f, indent=3)
+
+
 def main():
     data_dir = os.path.join(ROOT_DIR, "adaptive_gac_hms_output") 
 
@@ -379,7 +842,15 @@ def main():
         patient_ids=patients_to_process,
     )
     # mda.analyze_sides()
-    mda.analyze_neighbours()
+    # mda.analyze_neighbours()
+    # mda.measure_muscle_intrusion()
+    # mda.create_dataset()
+
+    msm = MuscleSegmentationModel(
+        dataset_path=os.path.join(ROOT_DIR, "hms_muscle_analysis_output", "dataset.json"),
+        data_dir=data_dir
+    )
+    msm.eval_dataset()
 
 if __name__ == "__main__":
     main()
