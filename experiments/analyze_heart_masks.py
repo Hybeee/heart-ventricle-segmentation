@@ -273,7 +273,6 @@ class MaskDataAnalyzer:
                             for s, n in zip(sl, diff_labeled.shape))
                 
                 comp = diff_labeled[sl] == component
-                comp = ndimage.binary_dilation(comp, structure=struct)
                 allowed = comp | lv[sl]
                 eroded = ndimage.binary_erosion(allowed, structure=struct)
                 count = np.count_nonzero(comp & eroded)
@@ -360,19 +359,26 @@ class MaskDataAnalyzer:
 
         return max_dist
 
+    def _get_edt_max_dist(self, edt_map, mask):
+        vals = edt_map[mask]
+
+        if vals.size == 0:
+            raise RuntimeError(f"Values for component edt is empty.")
+
+        return float(vals.max() - vals.min())
 
     def measure_muscle_intrusion(self):
         print(f"Analyzing muscle intrusion data...")
-        output_dir = os.path.join(self.output_dir, "intrusion_analysis_lvc")
+        output_dir = os.path.join(self.output_dir, "intrusion_analysis")
         os.makedirs(output_dir, exist_ok=True)
 
         all_data = {}
 
         for patient_id in self.patient_ids:
-            patient_id = "patient_0004"
             print(f"\tProcessing {patient_id}...")
 
             lv_path = os.path.join(self.data_dir, patient_id, "final_mask_nip.seg.nrrd")
+            hull_path = os.path.join(self.data_dir, patient_id, "convex_hull.seg.nrrd")
             al_path = os.path.join(self.data_dir, patient_id, "al_intersection.seg.nrrd")
             pm_path = os.path.join(self.data_dir, patient_id, "pm_intersection.seg.nrrd")
             diff_path = os.path.join(self.data_dir, patient_id, "diff.seg.nrrd")
@@ -381,6 +387,15 @@ class MaskDataAnalyzer:
             lv = lv > 0
             spacing = np.array(lv_sitk.GetSpacing())[::-1]
             lv_c = voxel_coords(lv, spacing).mean(axis=0)
+
+            hull_sitk, hull = utils.scan_to_np_array(scan_path=hull_path, return_sitk=True)
+            hull_edt = sitk.SignedMaurerDistanceMap(
+                hull_sitk,
+                insideIsPositive=True,
+                squaredDistance=False,
+                useImageSpacing=True
+            )
+            hull_edt = sitk.GetArrayFromImage(hull_edt)
             
             al = utils.scan_to_np_array(scan_path=al_path)
             pm = utils.scan_to_np_array(scan_path=pm_path)
@@ -414,16 +429,10 @@ class MaskDataAnalyzer:
                 comp = diff_labeled[sl] == component
                 convex_hull = convex_hull_image(comp)
 
-                if component == 7 or component == 80:
-                    comp_c = voxel_coords(
-                        mask=diff_labeled == component,
-                        spacing=spacing
-                    ).mean(axis=0)
-                    comp_id = component
-                else:
-                    comp_id = None
-                    comp_c = None
+                comp_id = None
+                comp_c = None
 
+                # OLD MAX DIST
                 max_dist = self._get_convex_hull_mask_dist(
                     mask=comp,
                     convex_hull=convex_hull,
@@ -435,6 +444,12 @@ class MaskDataAnalyzer:
                     offset=offset,
                     comp_id = comp_id
                 )
+                # NEW MAX DIST
+                max_dist = self._get_edt_max_dist(
+                    edt_map=hull_edt,
+                    mask=(diff_labeled == component)
+                )
+
                 dists.append(max_dist)
                 curr_data[int(component)] = float(max_dist)
 
@@ -458,7 +473,6 @@ class MaskDataAnalyzer:
                 "pm_component": int(pm_component),
                 "component_data": curr_data
             }
-            return
 
         with open(os.path.join(self.output_dir, "intrusion_data.json"), 'w') as f:
             json.dump(all_data, f, indent=3)
@@ -478,7 +492,7 @@ class MaskDataAnalyzer:
 
         return t.mean(), lo, hi
 
-    def create_dataset(self):
+    def create_dataset(self, dataset_name="dataset"):
         print("Creating dataset...")
         dataset = {}
 
@@ -544,13 +558,14 @@ class MaskDataAnalyzer:
                     "thickness": float(thickness),
                     "rel_vol": float(rel_vol),
                     "norm_mean": float(norm_mean),
-                    ""
+                    "norm_lo": float(norm_lo),
+                    "norm_hi": float(norm_hi),
                     "is_muscle": bool(component in (al_c, pm_c))
                 }
 
             dataset[patient_id] = patient_data
 
-        with open(os.path.join(self.output_dir, "dataset.json"), 'w') as f:
+        with open(os.path.join(self.output_dir, f"{dataset_name}.json"), 'w') as f:
             json.dump(dataset, f, indent=3)
 
 def _component_touching(diff, struct):
@@ -642,8 +657,8 @@ def _create_gt_hm_intersection(data_dir, patient_ids):
         _save_slice_with_largest_struct(al_intersection, "AL")
         _save_slice_with_largest_struct(pm_intersection, "PM")
 
-FEATURES = ["neighbor_fraction","intrusion_depth","thickness","rel_vol","norm_pos"]
-MODEL_TYPE = "SVM"
+FEATURES = ["neighbor_fraction","intrusion_depth","thickness","rel_vol","norm_mean","norm_lo","norm_hi"]
+MODEL_TYPE = "logreg"
 
 class MuscleSegmentationModel:
     def __init__(self, dataset_path: str, data_dir: str):
@@ -685,8 +700,8 @@ class MuscleSegmentationModel:
             )
         elif MODEL_TYPE == "SVM":
             pre = ColumnTransformer(
-                [("log1p", FunctionTransformer(np.log1p), ["intrusion_depth", "thickness"]),
-                 ("log", FunctionTransformer(np.log), ["rel_vol"])]
+                [("log", FunctionTransformer(np.log), ["rel_vol"])],
+                 remainder='passthrough'
             )
 
             return make_pipeline(
@@ -781,10 +796,13 @@ class MuscleSegmentationModel:
 
         final_res = {}
         final_res["eval_results"] = {
+            "dataset": os.path.basename(self.dataset_path),
             "correct": n_correct,
             "all": len(results),
             "accuracy": float(n_correct / len(results)),
-            "to_inspect": [p for p, ok in results.items() if not ok]
+            "to_inspect": [p for p, ok in results.items() if not ok],
+            "model": MODEL_TYPE,
+            "features": FEATURES
         }
         final_res["detailed_results"] = {
             pid: {int(comp): float(s) for comp, s in zip(g["component"], g[result_col_name])}
@@ -837,6 +855,8 @@ def main():
         "patient_0053"
     ]
 
+    dataset_name = "dataset_edt_dist"
+
     mda = MaskDataAnalyzer(
         data_dir=data_dir,
         patient_ids=patients_to_process,
@@ -844,10 +864,10 @@ def main():
     # mda.analyze_sides()
     # mda.analyze_neighbours()
     # mda.measure_muscle_intrusion()
-    # mda.create_dataset()
+    # mda.create_dataset(dataset_name=dataset_name)
 
     msm = MuscleSegmentationModel(
-        dataset_path=os.path.join(ROOT_DIR, "hms_muscle_analysis_output", "dataset.json"),
+        dataset_path=os.path.join(ROOT_DIR, "hms_muscle_analysis_output", f"{dataset_name}.json"),
         data_dir=data_dir
     )
     msm.eval_dataset()
