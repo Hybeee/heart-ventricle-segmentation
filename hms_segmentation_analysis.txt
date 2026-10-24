@@ -1,0 +1,85 @@
+- patient_0004
+	- A talpat az izomnak a postproc levagja
+- patient_0005
+	- alapvetoen az opening itt kettevag egy szivizmot es azok lesznek ketten a legnagyobb komponensek.
+- patient_0006 INDOK
+	- erdekes LV kontraszt, nagyon sok aga van -> viszonylag rosszabb LV szegmentacio emiatt
+- patient_0007 INDOK
+	- alacsony felbontas
+- patient_0009 INDOK
+	- egyreszt egybenott a kett izom (gac szerint, szoval "egybenott")
+	- postproc levagja az egyik felet (egyertelmu, vekony hid koti oket ossze)
+	- erdekes eset, mert normal-nal szetfolyik es ez opened-nel se kevesbe jelentos -> rossz maszkok
+- patient_0010
+	- kis lyukak postproc miatt
+- patient_0011 INDOK
+	- Alacsony(abb) felbontas. Opened-nek nincs izma egyik oldalon -> viszont postproc/normal van izom
+- patient_0013 INDOK
+	- hangyafoci CT - gt is hangyafoci-szeru
+- patient_0014
+	- postproc talan jobban lemetsz darabokat...
+- patient_0015
+	- NAGYON vekonyan a rendes izom a falsh (id 5 vagy 13 az opened component-eknel) izomhoz kapcsolodik -> postproc eltunteti a valos izmot meg a diffben is
+- patient_0016
+	- egy befele mutato reszt vag le helytelenul postproc
+- patient_0017
+	- jo, de egyebkent o alacsonyabb felbontasu
+- patient_0020 INDOK
+	- GAC jo, de tul sok kifolyas a szelen. egyebkent postproc viszonylag jol megoldja, de nem tokeletesen (nehol tul sok levagas)
+	- valos hiba
+- patient_0021 INDOK
+	- egyebkent beveheto. nem tokeletes, mert gac tul hamar konvergal, de jo - AL izom nem er ki elegge
+- patient_0023 INDOK
+	- alacsonyabb felbontas miatt nem latszodik az AL izom
+- patient_0024
+	- opening tul sokat vagott le -> postproc verzio mar - GT-t tekintve kb. - jo izmot szegmental
+- patient_0026
+	- a normal_diff-ben hozzacsatlakozik a masodik izom az elsohoz -> levagodik a postproc-ban
+	- lehet haromagu?
+	- egyebkent kb. jo az opened izom is
+- patient_0028 INDOK
+	- alacsony felbontas
+	- postproc-cal jo, de a PM izom pl valszeg nem? ott a GT mintha fallback szegmentacio lenne
+- patient_0029 INDOK
+	- ugyanaz a felvetel, mint patient_0028
+- patient_0030
+	- alacsonyabb felbontas, de jonak tunik
+- patient_0032 INDOK
+	- alacsonyabb felbontas, openingben egyik oldalon nincs, normal/postproc eseten pedig minimalis az azon az oldalon levo izom
+- patient_0033 INDOK
+	- ugyanaz a felvetel, mint patient_0032
+- patient_0034 INDOK
+	- van szivizom, hamar konvergal a GAC, de amugy jo.
+- patient_0035 INDOK
+	- rosszabb minosegu felvetel -> rosszabb LV maszk, egy jelentos bemelyedes van
+- patient_0036
+	- alacsonyabb felbontas, de nagyjabol jo
+- patient_0037
+	- postproc jo, de nem tudom eldonteni, hogy tul aggresszivan vagja-e le a komponenst vagy sem
+- patient_0039 INDOK
+	- alapvetoen a felvetel jo, de minimalis bemelyedes az egyik oldalon -> nincs izom (PM)
+- patient_0040
+	- alacsonyabb felbontas, de mukodik
+- patient_0042 INDOK
+	- alacsony felbontas
+- patient_0043 INDOK
+	- hangyafoci felvetel
+- patient_0044 INDOK
+	- orvosi GT-vel egyutt nehez volt eldonteni, hogy melyik a jo komponens. ha nincs orvosi GT, akkor logika alapjan jo
+- patient_0045
+	- PM izombol postproc tul sokat vag le
+- patient_0046 INDOK
+	- hangyafoci CT
+- patient_0049
+	- alacsonyabb felbontas, de jo
+- patient_0051 INDOK
+	- alacsonyabb felbontas, emiatt open-nek az AL komponense kisebb
+	- normal/postproc jobb, viszont a GT szegmentacioknak nincs tul sok ertelmuk, emiatt nehez eldonteni, hogy mi a jo szegmentacio
+	- logika alapjan jo
+- patient_0053
+	- megint erdekes a GT es kerdeses, hogy mi a jo
+	- postproc a felvetel alapjan jo/jobb
+	- alatamasztas: valoban postproc jo, GT-s dataset keszitesenel kulon ag van patient_0053 eseten:
+	        elif patient_id == "patient_0053":
+            labeled, n = ndimage.label(diff)
+            pm_intersection = labeled == 1 (Ok: GT nem tunik jonak)
